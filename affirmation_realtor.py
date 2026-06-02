@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Creative Daily - Affirmation for Realtor Channel (No sayings included)
+Now uses today's date by default instead of hardcoded June 15.
 """
 
 import os
@@ -435,7 +436,13 @@ class AffirmationExtractor:
         return {'status': 'success', 'date': target_date, 'affirmation': affirmation, 'video_path': video_path, 'youtube': youtube_result}
 
 if __name__ == "__main__":
-    target_date = sys.argv[1] if len(sys.argv) > 1 else "2026-06-15"
+    # FIX: Use today's date by default, not hardcoded June 15
+    # If a date argument is provided (e.g., "2026-06-20"), use that instead
+    if len(sys.argv) > 1 and re.match(r'\d{4}-\d{2}-\d{2}', sys.argv[1]):
+        target_date = sys.argv[1]
+    else:
+        target_date = datetime.now().strftime("%Y-%m-%d")
+    
     print(f"📅 Target Date: {target_date}")
     
     processor = AffirmationExtractor("your_document.pdf", "affirmation_pages")
