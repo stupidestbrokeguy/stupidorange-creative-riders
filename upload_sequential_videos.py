@@ -136,14 +136,14 @@ def build_description(number, credit_dict, custom_credits=None):
     - otherwise, use the global format without credits.
     """
     today = datetime.now().strftime("%B %d, %Y")
-    base_desc = f"Daily video from StupidOrange. Creativity prints money.\n\nVideo #{number} in the series.\n\n📅 {today}"
+    base_desc = f"Daily video from Stupid Orange Riders.{today}"
     
     credit_text = credit_dict.get(str(number)) or credit_dict.get(number)
     if credit_text:
         base_desc += f"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 CREDITS:\n{credit_text}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     
     # Footer
-    base_desc += "\n\n🔗 stupidorange.com\n#StupidOrange #CreativeDaily #VideoOfTheDay"
+    base_desc += "\n\n🔗 stupidorange.com\n#stupidorange #creativedaily #VideoOfTheDay #Dubai #dubai #rider #riders #talabat #deliveroo #careem #riders #UAE"
     return base_desc
 
 
@@ -186,8 +186,8 @@ def main():
     # 4. Load credits
     credits = load_credits()
     description = build_description(next_number, credits)
-    title = f"Video of the Day - {next_number} ({datetime.now().strftime('%Y-%m-%d')})"
-    tags = ["StupidOrange", "CreativeDaily", "VideoOfTheDay", f"Video{next_number}"]
+    title = f"Video of the Day | ({datetime.now().strftime('%Y-%m-%d')}) | Stupid Orange Riders"
+    tags = ["StupidOrange", "CreativeDaily", "VideoOfTheDay", "UAE","dubai","Dubai","Riders","talabat","careem","deliveroo","rider","DubaiMall"}"]
 
     # 5. Upload
     youtube = get_authenticated_service()
