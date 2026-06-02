@@ -1,0 +1,60 @@
+name: Upload Realtor Shorts
+
+on:
+  schedule:
+    # Runs daily at 11:00 AM Dubai time (7:00 UTC)
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install pillow moviepy google-api-python-client google-auth-oauthlib
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Create directories
+        run: |
+          mkdir -p daily_images
+          mkdir -p extracted_date_pages
+
+      - name: Decode Realtor token
+        env:
+          TOKEN: ${{ secrets.YOUTUBE_TOKEN_PICKLE_REALTOR }}
+        run: |
+          echo "$TOKEN" | base64 -d > token.pickle
+
+      - name: Create client_secrets.json
+        env:
+          CLIENT_SECRETS: ${{ secrets.YOUTUBE_CLIENT_SECRETS }}
+        run: |
+          echo "$CLIENT_SECRETS" > client_secrets.json
+
+      - name: Run Realtor Shorts script
+        run: python daily_shorts_realtor.py
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: realtor-shorts-output
+          path: |
+            shorts_state_realtor.json
+            *.mp4
+            *.jpg
