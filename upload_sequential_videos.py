@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
 Upload videos sequentially from a folder, one per run.
+Supports repost videos with custom credits.
 Videos must be named with a number (e.g., 1.mp4, 2.mp4, 001.avi, 10.mov).
+Credits are defined in credits.json (mapping number -> credit text).
 State is saved in video_sequence_state.json and committed to the repo.
 """
 
@@ -22,6 +24,7 @@ from googleapiclient.http import MediaFileUpload
 # ========== CONFIGURATION ==========
 VIDEO_FOLDER = "video_of_day"
 STATE_FILE = "video_sequence_state.json"
+CREDITS_FILE = "credits.json"          # New: per-video credits
 CLIENT_SECRETS = "client_secrets.json"
 TOKEN_PICKLE = "token.pickle"
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
@@ -63,7 +66,7 @@ def get_video_files(folder):
         if match:
             num = int(match.group(1))
             result.append((num, f))
-    result.sort(key=lambda x: x[0])  # sort by numeric key
+    result.sort(key=lambda x: x[0])
     return result
 
 
@@ -82,20 +85,27 @@ def save_state(number):
         json.dump({"last_uploaded_number": number}, f, indent=2)
 
 
+def load_credits():
+    """Load credits mapping from credits.json (if exists). Returns dict number->credit_string."""
+    if os.path.exists(CREDITS_FILE):
+        with open(CREDITS_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+
 def commit_and_push_state():
     """Commit and push the state file back to the repository."""
     try:
         subprocess.run(["git", "config", "user.email", "actions@github.com"], check=True)
         subprocess.run(["git", "config", "user.name", "GitHub Actions"], check=True)
-        subprocess.run(["git", "add", STATE_FILE], check=True)
-        # Only commit if there are changes
+        subprocess.run(["git", "add", STATE_FILE, CREDITS_FILE], check=True)  # also track credits changes
         status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
-        if STATE_FILE in status.stdout:
-            subprocess.run(["git", "commit", "-m", f"Update video sequence state after upload at {datetime.now().isoformat()}"], check=True)
+        if any(f in status.stdout for f in [STATE_FILE, CREDITS_FILE]):
+            subprocess.run(["git", "commit", "-m", f"Update video sequence state/credits at {datetime.now().isoformat()}"], check=True)
             subprocess.run(["git", "push"], check=True)
-            print("✅ State file committed and pushed.")
+            print("✅ State/credits file committed and pushed.")
         else:
-            print("ℹ️ No changes to state file.")
+            print("ℹ️ No changes to state or credits.")
     except Exception as e:
         print(f"⚠️ Could not commit/push state: {e}")
 
@@ -119,6 +129,24 @@ def upload_video(youtube, video_path, title, description, tags, privacy_status="
     return response["id"]
 
 
+def build_description(number, credit_dict, custom_credits=None):
+    """
+    Build YouTube description.
+    - custom_credits: if provided, use that string directly (per-number)
+    - otherwise, use the global format without credits.
+    """
+    today = datetime.now().strftime("%B %d, %Y")
+    base_desc = f"Daily video from StupidOrange. Creativity prints money.\n\nVideo #{number} in the series.\n\n📅 {today}"
+    
+    credit_text = credit_dict.get(str(number)) or credit_dict.get(number)
+    if credit_text:
+        base_desc += f"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 CREDITS:\n{credit_text}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    # Footer
+    base_desc += "\n\n🔗 stupidorange.com\n#StupidOrange #CreativeDaily #VideoOfTheDay"
+    return base_desc
+
+
 def main():
     # 1. Get video files
     videos = get_video_files(VIDEO_FOLDER)
@@ -135,13 +163,11 @@ def main():
     if last_uploaded is None:
         next_number = numbers[0]          # first time: smallest
     else:
-        # Find index of last_uploaded
         try:
             idx = numbers.index(last_uploaded)
             next_idx = (idx + 1) % len(numbers)
             next_number = numbers[next_idx]
         except ValueError:
-            # last_uploaded not in current list (maybe removed) -> start over
             next_number = numbers[0]
 
     # 3. Get file path for that number
@@ -157,23 +183,24 @@ def main():
 
     print(f"📹 Today's video: {video_path} (number {next_number})")
 
-    # 4. Upload to YouTube
-    youtube = get_authenticated_service()
-    today = datetime.now().strftime("%Y-%m-%d")
-    title = f"Video of the Day - ({today}) | Stupid Orange Riders"
-    description = f"Daily video from Stupid Orange. Our mission is to help people start collecting royalty from their creativity. On this channel you will be up to date with the progress of our initiative"
-    tags = ["StupidOrange", "CreativeDaily", "VideoOfTheDay", "Dubai","riders","talabat","careem","deliveroo","rider","dubai","creativity","stupidorangeriders"]
+    # 4. Load credits
+    credits = load_credits()
+    description = build_description(next_number, credits)
+    title = f"Video of the Day - {next_number} ({datetime.now().strftime('%Y-%m-%d')})"
+    tags = ["StupidOrange", "CreativeDaily", "VideoOfTheDay", f"Video{next_number}"]
 
+    # 5. Upload
+    youtube = get_authenticated_service()
     try:
         video_id = upload_video(youtube, video_path, title, description, tags, privacy_status="public")
         print(f"✅ Uploaded! Video ID: {video_id}")
         print(f"🔗 https://youtu.be/{video_id}")
 
-        # 5. Update state
+        # 6. Update state
         save_state(next_number)
         print(f"💾 Saved state: last_uploaded = {next_number}")
 
-        # 6. Commit and push state back to repo
+        # 7. Commit and push state (and credits if changed)
         commit_and_push_state()
 
     except Exception as e:
