@@ -13,7 +13,7 @@ from datetime import datetime
 import fitz  # PyMuPDF
 
 # ========== REALTOR CONFIGURATION ==========
-PLAYLIST_TITLE = "Creative Daily Assignments | Stupid Orange Realtor"
+PLAYLIST_TITLE = "Creative Daily Assignments | Stupid Orange Realtors"
 PLAYLIST_DESCRIPTION = """Daily assignments from Creative Daily to help real estate professionals and property investors take action and start collecting royalties from their creativity."""
 
 # Template file name (your Canva design for assignments)
@@ -390,7 +390,7 @@ class AssignmentExtractor:
         date_obj = datetime.strptime(target_date, "%Y-%m-%d")
         formatted_date = date_obj.strftime("%B %d, %Y")
 
-        full_title = f"Creative Daily Assignment | {formatted_date} | Stupid Orange Realtor"
+        full_title = f"Creative Daily Assignment | {formatted_date} | Stupid Orange Realtors"
         
         video_description = f"""📋 DAILY ASSIGNMENT - {formatted_date} 📋
 
