@@ -1,0 +1,12 @@
+# Progress files (don't upload to GitHub)
+send_progress.json
+email_sending_log.txt
+failed_batch_*.xlsx
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local environment
+.env
+*.local

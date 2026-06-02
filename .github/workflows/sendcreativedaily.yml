@@ -1,0 +1,73 @@
+name: Daily Creative Daily YouTube Upload
+
+on:
+  schedule:
+    - cron: '0 20 * * *'  # 20:00 UTC = 00:00 Dubai time (next day)
+  workflow_dispatch:  # Allow manual runs
+
+jobs:
+  send-creativedaily:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      actions: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+        lfs: true
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install PyMuPDF moviepy google-api-python-client google-auth-oauthlib google-auth-httplib2 pillow numpy
+    
+    - name: Install FFmpeg
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg
+    
+    - name: Create client_secrets.json from secret
+      run: |
+        echo '${{ secrets.CLIENT_SECRETS_JSON }}' > client_secrets.json
+        echo "✅ client_secrets.json created"
+    
+    - name: Decode token from secret
+      run: |
+        echo "${{ secrets.YOUTUBE_TOKEN }}" | base64 -d > token.pickle
+        echo "✅ token.pickle restored"
+    
+    - name: Verify PDF exists
+      run: |
+        if [ ! -f your_document.pdf ]; then
+          echo "❌ PDF file not found!"
+          exit 1
+        fi
+        echo "✅ PDF file found ($(du -h your_document.pdf | cut -f1))"
+    
+    - name: Set today's date (Dubai time)
+      id: date
+      run: |
+        TODAY=$(TZ='Asia/Dubai' date +'%Y-%m-%d')
+        echo "📅 Processing date: $TODAY"
+        echo "date=$TODAY" >> $GITHUB_OUTPUT
+    
+    - name: Run Creative Daily script
+      run: |
+        python check.py --date "${{ steps.date.outputs.date }}"
+    
+    - name: Upload video as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: creative-daily-video-${{ steps.date.outputs.date }}
+        path: extracted_date_pages/*.mp4
+        retention-days: 30

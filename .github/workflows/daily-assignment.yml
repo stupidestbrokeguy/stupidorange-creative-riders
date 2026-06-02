@@ -1,0 +1,104 @@
+name: Daily Assignment - 30 Second Clip
+
+on:
+  schedule:
+    # Run at 7:05 AM Dubai time (3:05 UTC) - 2 minutes after affirmation
+    - cron: '5 3 * * *'
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: 'Target date (YYYY-MM-DD)'
+        required: false
+        default: '2026-06-21'
+        type: string
+
+jobs:
+  send-assignment:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      actions: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+        lfs: true
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install PyMuPDF moviepy google-api-python-client google-auth-oauthlib google-auth-httplib2 pillow numpy
+    
+    - name: Install FFmpeg
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg
+    
+    - name: Install ImageMagick
+      run: |
+        sudo apt-get install -y imagemagick
+        sudo sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml || true
+    
+    - name: Create client_secrets.json from secret
+      run: |
+        echo '${{ secrets.CLIENT_SECRETS_JSON }}' > client_secrets.json
+        echo "✅ client_secrets.json created"
+    
+    - name: Decode token from secret
+      run: |
+        echo "${{ secrets.YOUTUBE_TOKEN }}" | base64 -d > token.pickle
+        echo "✅ token.pickle restored"
+    
+    - name: Verify PDF exists
+      run: |
+        if [ ! -f your_document.pdf ]; then
+          echo "❌ PDF file not found!"
+          exit 1
+        fi
+        echo "✅ PDF file found ($(du -h your_document.pdf | cut -f1))"
+    
+    - name: Set target date
+      id: date
+      run: |
+        if [ -n "${{ github.event.inputs.target_date }}" ] && [ "${{ github.event.inputs.target_date }}" != "" ]; then
+          echo "date=${{ github.event.inputs.target_date }}" >> $GITHUB_OUTPUT
+          echo "📅 Using manual date: ${{ github.event.inputs.target_date }}"
+        else
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "📅 Using today's date: $(date +'%Y-%m-%d')"
+        fi
+    
+    - name: Run Assignment script
+      run: |
+        echo "🎬 Processing assignment for: ${{ steps.date.outputs.date }}"
+        python assignment_extractor.py ${{ steps.date.outputs.date }}
+    
+    - name: Upload video artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: assignment-video-${{ steps.date.outputs.date }}
+        path: assignment_pages/*_video.mp4
+        retention-days: 30
+      if: always()
+    
+    - name: Upload image artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: assignment-image-${{ steps.date.outputs.date }}
+        path: assignment_pages/*.png
+        retention-days: 30
+      if: always()
+    
+    - name: Log completion
+      run: |
+        echo "✅ Daily assignment processing complete!"
+        echo "📹 Check YouTube channel for the 30-second assignment clip"
