@@ -18,8 +18,8 @@ from PIL import Image
 import random
 
 # ========== CONFIGURATION ==========
-VIDEO_TITLE = "Stupid Broke Moment, What Happened? - Stupid Orange, Stupidest Broke Guy, Creative Daily"
-HASHTAGS = "#stupidorange #creativedaily #stupidestbrokeguy #Dubai #UAE #fyp"
+VIDEO_TITLE = "Stupid Broke Moment, What Happened? - Stupid Orange, Stupid Orange Riders, Creative Daily"
+HASHTAGS = "#stupidorange #creativedaily #stupidorangeriders #Dubai #UAE #fyp #dubai #talabat #rider #careem #deliveroo #delivery #BikerLife #dubailife"
 VIDEO_DURATION = random.randint(16, 21) 
 IMAGES_FOLDER = "daily_images"
 STATE_FILE = "shorts_state.json"
