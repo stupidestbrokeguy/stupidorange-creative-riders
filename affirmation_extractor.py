@@ -331,7 +331,7 @@ class AffirmationExtractor:
 🔗 www.stupidorange.com
 📘 creativedaily.stupidorange.com
 
-#affirmation #dailyaffirmation #creativedaily #stupidestbrokeguy #UAE #Dubai #talabat #careem #deliveroo #dubai #rider #delivery #bikerider
+#affirmation #dailyaffirmation #creativedaily #stupidorangeriders #UAE #Dubai #talabat #careem #deliveroo #dubai #rider #delivery #bikerider
 """
         try:
             from google.oauth2.credentials import Credentials
