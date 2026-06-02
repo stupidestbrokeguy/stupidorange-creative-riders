@@ -9,12 +9,12 @@ jobs:
   upload:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required for pushing to repository
+      contents: write
     
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}  # Built-in token
+          token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
           fetch-depth: 0
       
@@ -24,27 +24,37 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install pillow moviepy google-api-python-client google-auth-oauthlib
+          pip install pillow moviepy google-api-python-client google-auth-oauthlib PyMuPDF numpy
           sudo apt-get update
           sudo apt-get install -y ffmpeg
       
-      - name: Decode secrets
+      - name: Create required directories
+        run: |
+          mkdir -p extracted_date_pages
+          mkdir -p daily_images
+      
+      - name: Create client_secrets.json (raw JSON)
         env:
           CLIENT_SECRETS: ${{ secrets.YOUTUBE_CLIENT_SECRETS }}
+        run: |
+          echo "$CLIENT_SECRETS" > client_secrets.json
+      
+      - name: Decode token.pickle from base64
+        env:
           TOKEN: ${{ secrets.YOUTUBE_TOKEN_PICKLE }}
         run: |
-          echo "$CLIENT_SECRETS" | base64 -d > client_secrets.json
           echo "$TOKEN" | base64 -d > token.pickle
       
-      - name: Run script
+      - name: Run daily_shorts.py
         run: python daily_shorts.py
       
-      - name: Upload logs
+      - name: Upload artifacts (keep for debugging)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: shorts-output
           path: |
+            extracted_date_pages/*.mp4
+            extracted_date_pages/*.png
+            daily_images/*.png
             shorts_state.json
-            *.mp4
-            *.jpg
-            *.png
