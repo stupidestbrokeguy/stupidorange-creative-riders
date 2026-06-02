@@ -13,7 +13,7 @@ import fitz  # PyMuPDF
 
 # ========== CONFIGURATION ==========
 PLAYLIST_TITLE = "Creative Daily Affirmations | Stupid Orange"
-PLAYLIST_DESCRIPTION = """Daily affirmations from Creative Daily to help you start collecting royalties from your creativity."""
+PLAYLIST_DESCRIPTION = """Daily affirmations from Creative Daily to help you start collecting royalties from your creativity. Stupid Orange is a fashion brand helping people to fastrack to collecting their first royalty and live a true royal lifestyle"""
 
 TEMPLATE_PATH = "affirmation_template.png"
 
@@ -318,7 +318,7 @@ class AffirmationExtractor:
         print(f"\n📤 Uploading to YouTube...")
         date_obj = datetime.strptime(target_date, "%Y-%m-%d")
         formatted_date = date_obj.strftime("%B %d, %Y")
-        full_title = f"Creative Daily Affirmation | {formatted_date} | Stupid Orange"
+        full_title = f"Creative Daily Affirmation | {formatted_date} | Stupid Orange | Stupid Orange Riders"
         
         video_description = f"""🌟 DAILY AFFIRMATION - {formatted_date} 🌟
 
@@ -331,7 +331,7 @@ class AffirmationExtractor:
 🔗 www.stupidorange.com
 📘 creativedaily.stupidorange.com
 
-#affirmation #dailyaffirmation #creativedaily #stupidestbrokeguy #UAE #Dubai
+#affirmation #dailyaffirmation #creativedaily #stupidestbrokeguy #UAE #Dubai #talabat #careem #deliveroo #dubai #rider #delivery #bikerider
 """
         try:
             from google.oauth2.credentials import Credentials
