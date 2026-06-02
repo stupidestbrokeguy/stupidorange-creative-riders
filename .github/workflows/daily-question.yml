@@ -1,0 +1,50 @@
+name: Daily YouTube Shorts
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for pushing to repository
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}  # Built-in token
+          persist-credentials: true
+          fetch-depth: 0
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install pillow moviepy google-api-python-client google-auth-oauthlib
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      
+      - name: Decode secrets
+        env:
+          CLIENT_SECRETS: ${{ secrets.YOUTUBE_CLIENT_SECRETS }}
+          TOKEN: ${{ secrets.YOUTUBE_TOKEN_PICKLE }}
+        run: |
+          echo "$CLIENT_SECRETS" | base64 -d > client_secrets.json
+          echo "$TOKEN" | base64 -d > token.pickle
+      
+      - name: Run script
+        run: python daily_shorts.py
+      
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: shorts-output
+          path: |
+            shorts_state.json
+            *.mp4
+            *.jpg
+            *.png
