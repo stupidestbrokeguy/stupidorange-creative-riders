@@ -13,7 +13,7 @@ from datetime import datetime
 import fitz  # PyMuPDF
 
 # ========== REALTOR CONFIGURATION ==========
-PLAYLIST_TITLE = "Creative Daily Affirmations | Stupid Orange Realtor"
+PLAYLIST_TITLE = "Creative Daily Affirmations | Stupid Orange Realtors"
 PLAYLIST_DESCRIPTION = """Daily affirmations from Creative Daily to help real estate professionals and property investors start collecting royalties from their creativity. Stupid Orange Realtor is a brand helping people in real estate to fast-track to collecting their first royalty and live a true royal lifestyle."""
 
 TEMPLATE_PATH = "affirmation_template.png"
@@ -319,7 +319,7 @@ class AffirmationExtractor:
         print(f"\n📤 Uploading to YouTube...")
         date_obj = datetime.strptime(target_date, "%Y-%m-%d")
         formatted_date = date_obj.strftime("%B %d, %Y")
-        full_title = f"Creative Daily Affirmation | {formatted_date} | Stupid Orange Realtor"
+        full_title = f"Creative Daily Affirmation | {formatted_date} | Stupid Orange Realtors"
         
         video_description = f"""🌟 DAILY AFFIRMATION - {formatted_date} 🌟
 
@@ -332,7 +332,7 @@ class AffirmationExtractor:
 🔗 www.stupidorange.com
 📘 creativedaily.stupidorange.com
 
-#affirmation #dailyaffirmation #creativedaily #stupidorangerealtor #UAE #DubaiRealEstate #PropertyInvestment #realestateagent
+#affirmation #dailyaffirmation #creativedaily #stupidorangerealtors #UAE #DubaiRealEstate #PropertyInvestment #realestateagent
 """
         try:
             from google.oauth2.credentials import Credentials
