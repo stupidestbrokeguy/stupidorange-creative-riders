@@ -13,7 +13,7 @@ from datetime import datetime
 import fitz  # PyMuPDF
 
 # ========== CONFIGURATION ==========
-PLAYLIST_TITLE = "Creative Daily Assignments | Stupid Orange"
+PLAYLIST_TITLE = "Creative Daily Assignments | Stupid Orange "
 PLAYLIST_DESCRIPTION = """Daily assignments from Creative Daily to help you take action and start collecting royalties from your creativity."""
 
 # Template file name (your Canva design for assignments)
@@ -466,7 +466,7 @@ class AssignmentExtractor:
 2. Comment "DONE" in the community
 3. Share your results!
 
-#assignment #dailyassignment #creativedaily #stupidestbrokeguy #UAE #Dubai #action
+#assignment #dailyassignment #creativedaily #stupidorangeriders #UAE #Dubai #action #talabat #careem #deliveroo #dubai #rider #delivery #bikerider
 """
         
         try:
