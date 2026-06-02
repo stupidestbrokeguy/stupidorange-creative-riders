@@ -187,7 +187,7 @@ def main():
     credits = load_credits()
     description = build_description(next_number, credits)
     title = f"Video of the Day | ({datetime.now().strftime('%Y-%m-%d')}) | Stupid Orange Riders"
-    tags = ["StupidOrange", "CreativeDaily", "VideoOfTheDay", "UAE","dubai","Dubai","Riders","talabat","careem","deliveroo","rider","DubaiMall"}"]
+    tags = ["StupidOrange", "CreativeDaily", "VideoOfTheDay", "UAE","dubai","Dubai","Riders","talabat","careem","deliveroo","rider","DubaiMall"]
 
     # 5. Upload
     youtube = get_authenticated_service()
