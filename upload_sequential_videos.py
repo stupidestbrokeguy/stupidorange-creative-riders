@@ -160,9 +160,9 @@ def main():
     # 4. Upload to YouTube
     youtube = get_authenticated_service()
     today = datetime.now().strftime("%Y-%m-%d")
-    title = f"Video of the Day - {next_number} ({today})"
-    description = f"Daily video from StupidOrange. Creativity prints money.\n\nVideo #{next_number} in the series."
-    tags = ["StupidOrange", "CreativeDaily", "VideoOfTheDay", f"Video{next_number}"]
+    title = f"Video of the Day - ({today}) | Stupid Orange Riders"
+    description = f"Daily video from Stupid Orange. Our mission is to help people start collecting royalty from their creativity. On this channel you will be up to date with the progress of our initiative"
+    tags = ["StupidOrange", "CreativeDaily", "VideoOfTheDay", "Dubai","riders","talabat","careem","deliveroo","rider","dubai","creativity","stupidorangeriders"]
 
     try:
         video_id = upload_video(youtube, video_path, title, description, tags, privacy_status="public")
