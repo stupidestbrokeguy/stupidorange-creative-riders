@@ -19,10 +19,10 @@ from datetime import datetime
 import fitz  # PyMuPDF
 
 # ========== CONFIGURATION ==========
-PLAYLIST_TITLE = "Creative Daily | Stupid Orange | Stupidest Broke Guy"
-PLAYLIST_DESCRIPTION = """Welcome to the Official Playlist of the Creative Daily from Stupid Orange. Here you will keep up to date with the message from Stupidest Broke Guy helping people to start collecting royalties from their creativity and live a true royal lifestyle.
+PLAYLIST_TITLE = "Creative Daily | Stupid Orange | Stupid Orange Riders"
+PLAYLIST_DESCRIPTION = """Welcome to the Official Playlist of the Creative Daily from Stupid Orange. Here you will keep up to date with the message from Stupidest Broke Guy helping riders to start collecting royalties from their creativity and live a true royal lifestyle.
 
-#Dubai #creativedaily #stupidestbrokeguy #UAE"""
+#Dubai #creativedaily #stupidestbrokeguy #UAE #talabat #careem #deliveroo #dubai #rider #delivery #bikerider"""
 # ===================================
 
 def find_free_port(start_port=8080, end_port=8090):
@@ -689,9 +689,9 @@ class CompleteCalendarExtractor:
         if video_title and video_title != "Creative Daily":
             main_title = video_title
         else:
-            main_title = f"Creative Daily | {formatted_date} | Stupid Orange | Stupidest Broke Guy"
+            main_title = f"Creative Daily | {formatted_date} | Stupid Orange | Stupid Orange Riders"
 
-        full_title = f"{main_title} | {formatted_date} | Creative Daily | Stupid Orange | Stupidest Broke Guy | #creativedaily #stupidestbrokeguy #UAE #Dubai"
+        full_title = f"{main_title} | {formatted_date} | Creative Daily | Stupid Orange | Stupid Orange Riders | #creativedaily #stupidestbrokeguy #UAE #Dubai #talabat #careem #deliveroo #dubai #rider #delivery #bikerider"
         print(f"   📝 Title: {full_title[:80]}...")
 
         video_description = f"""{page_text[:4500] if page_text else ''}
@@ -701,15 +701,11 @@ class CompleteCalendarExtractor:
 - Help a stranger improve their chances to access this video and get today's message of the Creative Daily that fastracks them to collecting their first royalty, Please - | Like/Share this video |
 - Have you successfuly finished doing today's Creative Daily Assignment? Please share your screenshots and comment on this post to motivate a someone in our commnity to continou practising, Please - | Leave a comment on this video and Tag #creativedaily when you post |
 
-Follow Our Official Social Media Handles
-
-- Official Youtube Channel - (https://www.youtube.com/@stupidestbrokeguy)
-- Official Tiktok Channel - (https://www.tiktok.com/@stupidestbrokeguy)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✨{main_title} |  {formatted_date} | Creative Daily | Stupid Orange | Stupidest Broke Guy
+✨{main_title} |  {formatted_date} | Creative Daily | Stupid Orange | Stupid Orange Riders
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- #creativedaily #creativedaily #stupidestbrokeguy #UAE #Dubai #fyp #
+ #creativedaily #creativedaily #stupidestbrokeguy #UAE #Dubai #fyp #talabat #careem #deliveroo #dubai #rider #delivery #bikerider
 """
         print(f"   📝 Description length: {len(video_description)} chars")
 
@@ -773,7 +769,7 @@ Follow Our Official Social Media Handles
                 'snippet': {
                     'title': full_title[:100],
                     'description': video_description[:5000],
-                    'tags': ['Dubai', 'creativedaily', 'stupidestbrokeguy', 'UAE', target_date],
+                    'tags': ['Dubai', 'creativedaily', 'stupidestbrokeguy', 'UAE','talabat', 'careem' ,'deliveroo' ,'dubai' ,'rider' ,'delivery' ,'bikerider', target_date],
                     'categoryId': '22'
                 },
                 'status': {'privacyStatus': 'public', 'selfDeclaredMadeForKids': False}
