@@ -50,12 +50,12 @@ jobs:
     
     - name: Create client_secrets.json from secret
       run: |
-        echo '${{ secrets.CLIENT_SECRETS_JSON }}' > client_secrets.json
+        echo '${{ secrets.YOUTUBE_CLIENT_SECRETS }}' > client_secrets.json
         echo "✅ client_secrets.json created"
     
     - name: Decode token from secret
       run: |
-        echo "${{ secrets.YOUTUBE_TOKEN }}" | base64 -d > token.pickle
+        echo "${{ secrets.YOUTUBE_TOKEN_PICKLE }}" | base64 -d > token.pickle
         echo "✅ token.pickle restored"
     
     - name: Verify PDF exists
