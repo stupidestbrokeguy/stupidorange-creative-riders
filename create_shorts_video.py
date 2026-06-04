@@ -68,21 +68,20 @@ def get_next_item(state_key, items, state):
     print(f"   🔄 {state_key}: was {idx}, now {state[state_key]} (next: {item[:40]}...)")
     return item
 
-# ===== LARGER FONT SIZES =====
-def create_text_overlay(text, duration, font_size=80, margin=60, bg_alpha=220):
+# ===== VERY LARGE FONT SIZES (readable on mobile) =====
+def create_text_overlay(text, duration, font_size=160, margin=40, bg_alpha=220):
     """
     Create a semi‑transparent text overlay on a transparent background.
-    Font size increased for better readability on 9:16 vertical video.
+    Font size is now very large for 9:16 vertical video.
     """
     img = Image.new('RGBA', VIDEO_SIZE, (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     try:
-        # Use a bold, larger font
         font = ImageFont.truetype("arial.ttf", font_size)
     except:
         font = ImageFont.load_default()
 
-    # Word wrap
+    # Word wrap – wider area because font is large
     max_width = VIDEO_SIZE[0] - 2 * margin
     words = text.split()
     lines = []
@@ -98,13 +97,13 @@ def create_text_overlay(text, duration, font_size=80, margin=60, bg_alpha=220):
     if current:
         lines.append(' '.join(current))
 
-    line_height = font_size + 15
-    total_h = len(lines) * line_height + 60
+    line_height = font_size + 20   # extra spacing for readability
+    total_h = len(lines) * line_height + 80
     total_w = 0
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
         total_w = max(total_w, bbox[2] - bbox[0])
-    total_w += 60
+    total_w += 80
 
     panel_x = (VIDEO_SIZE[0] - total_w) // 2
     panel_y = (VIDEO_SIZE[1] - total_h) // 2
@@ -113,7 +112,7 @@ def create_text_overlay(text, duration, font_size=80, margin=60, bg_alpha=220):
     img.paste(panel_img, (panel_x, panel_y), panel_img)
 
     draw = ImageDraw.Draw(img)
-    y_text = panel_y + 30
+    y_text = panel_y + 40
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
         line_w = bbox[2] - bbox[0]
@@ -252,22 +251,17 @@ def upload_to_youtube(video_path, title, description, tags, thumbnail_path=None,
 def push_state_to_repo():
     """Commit and push state files back to GitHub with [skip ci] to prevent loops."""
     try:
-        # Set git user (required for commit)
         subprocess.run(["git", "config", "user.name", "github-actions"], check=True, capture_output=True)
         subprocess.run(["git", "config", "user.email", "github-actions@github.com"], check=True, capture_output=True)
         
-        # Add state files
         subprocess.run(["git", "add", STATE_FILE, INTROS_FILE, PROMPTS_FILE], check=True, capture_output=True)
         
-        # Check if there are changes to commit
         result = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
         if result.returncode != 0:
-            # Commit with [skip ci] to avoid triggering a new workflow
             commit_msg = f"Update state after video upload {datetime.now().isoformat()} [skip ci]"
             subprocess.run(["git", "commit", "-m", commit_msg], check=True, capture_output=True)
             print(f"   ✅ Committed state with message: {commit_msg[:60]}...")
             
-            # Push
             push_result = subprocess.run(["git", "push"], capture_output=True, text=True)
             if push_result.returncode == 0:
                 print("   ✅ State files pushed to repository")
@@ -320,27 +314,30 @@ def main():
 
     clips = []
 
-    # Intro (font size 100)
+    # Intro – get the intro text and use it for title later
     intro_text = get_next_item("intro_index", intros, state)
+    # Clean intro text for title (remove newlines, trim)
+    intro_title = intro_text.replace('\n', ' ').strip()
+    
     bg_intro = next_background()
     intro_bg = ImageClip(bg_intro).resized(VIDEO_SIZE).with_duration(INTRO_DURATION)
-    intro_txt = create_text_overlay(intro_text, INTRO_DURATION, font_size=100, margin=50, bg_alpha=220)
+    intro_txt = create_text_overlay(intro_text, INTRO_DURATION, font_size=160, margin=40, bg_alpha=220)
     clips.append(CompositeVideoClip([intro_bg, intro_txt]))
 
-    # Prompts (font size 80)
+    # Prompts (font size 140, was 80)
     for i, prompt in enumerate(prompts):
         bg = next_background()
         bg_clip = ImageClip(bg).resized(VIDEO_SIZE).with_duration(ASSIGNMENT_DURATION)
         display = f"Prompt {i+1}\n\n{prompt}"
-        txt_clip = create_text_overlay(display, ASSIGNMENT_DURATION, font_size=80, margin=50, bg_alpha=220)
+        txt_clip = create_text_overlay(display, ASSIGNMENT_DURATION, font_size=140, margin=40, bg_alpha=220)
         clips.append(CompositeVideoClip([bg_clip, txt_clip]))
         print(f"   Added Prompt {i+1}")
 
-    # Outro (font size 90)
+    # Outro (font size 150)
     outro_text = "✅ Thank you for watching!\n\n👉 Click the link in description\n👉 Join the Creative Daily\n👉 Start your Fortune 500 journey"
     bg_outro = next_background()
     outro_bg = ImageClip(bg_outro).resized(VIDEO_SIZE).with_duration(OUTRO_DURATION)
-    outro_txt = create_text_overlay(outro_text, OUTRO_DURATION, font_size=90, margin=50, bg_alpha=220)
+    outro_txt = create_text_overlay(outro_text, OUTRO_DURATION, font_size=150, margin=40, bg_alpha=220)
     clips.append(CompositeVideoClip([outro_bg, outro_txt]))
 
     # Concatenate
@@ -371,7 +368,13 @@ def main():
     # Build description with prompts
     prompts_list_text = "\n".join([f"{i+1}. {p}" for i, p in enumerate(prompts)])
     today = datetime.now().strftime("%B %d, %Y")
-    title = f"3 A.I. Prompts to Go from Broke to Fortune 500 | {today} | Stupidest Broke Guy #Shorts"
+    
+    # ----- TITLE: Use the intro text as the first part -----
+    title = f"{intro_title} | {today} | Stupidest Broke Guy #Shorts"
+    # Ensure title is not too long (YouTube allows up to 100 chars)
+    if len(title) > 100:
+        title = title[:97] + "..."
+    
     description = f"""In this YouTube Short, we give you 3 copy‑paste ChatGPT prompts to turn your idea into a Fortune 500 strategy, based on real historical research.
 
 🔥 THE PROMPTS (copy & paste into ChatGPT):
@@ -392,6 +395,7 @@ Join the Creative Daily community: creativedaily.stupidorange.com
     
     # Upload to YouTube
     print("\n📤 Uploading to YouTube...")
+    print(f"   Title: {title}")
     video_url = upload_to_youtube(OUTPUT_VIDEO, title, description, tags, thumbnail_path=thumbnail_file)
 
     # Always push state, even if upload fails
