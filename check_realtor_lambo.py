@@ -36,8 +36,8 @@ INTROS_FILE = "intros_realtor.json"
 PROMPTS_FILE = "prompts_realtor.json"
 
 # YouTube playlist settings (Realtor‑specific)
-PLAYLIST_TITLE = "Creative Daily for Realtors | Stupid Orange"
-PLAYLIST_DESCRIPTION = """Daily creative prompts for real estate agents to generate leads and close deals using AI.
+PLAYLIST_TITLE = "Rags To Riches | Proven Strategies | Creative Daily | Stupidest Broke Guy"
+PLAYLIST_DESCRIPTION = """Daily creative prompts for creativity to rise so you can create Fortune 500  companies using proven strategies by fortune 500 companies.#stupidorange #AIprompts #Shorts
 
 #Realtor #RealEstate #DubaiRealEstate #StupidOrange #AIprompts #UAE"""
 
