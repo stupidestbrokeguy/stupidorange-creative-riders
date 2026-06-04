@@ -35,8 +35,8 @@ PROMPTS_FILE = "prompts.json"
 MAX_PROMPTS = 7   # Set to None to use all prompts
 
 # YouTube playlist settings
-PLAYLIST_TITLE = "3 A.I. Prompts | Stupidest Broke Guy"
-PLAYLIST_DESCRIPTION = """Weekly prompts to go from broke to Fortune 500 using AI.
+PLAYLIST_TITLE = "Rags To Riches | Proven Strategies | Creative Daily | Stupidest Broke Guy"
+PLAYLIST_DESCRIPTION = """Daily creative prompts for creativity to rise so you can create Fortune 500  companies using proven strategies by fortune 500 companies.#stupidorange #AIprompts #Shorts
 
 #StupidestBrokeGuy #AIprompts #Fortune500 #Dubai #UAE #Shorts"""
 
