@@ -2,6 +2,7 @@
 """
 Create a YouTube Shorts video with 3 A.I. prompts, using intro/prompt/background state,
 extract a thumbnail from the intro, upload to YouTube, and push state back to GitHub.
+Text rendering uses the same proven method as the affirmation script.
 """
 
 import os
@@ -10,6 +11,7 @@ import json
 import pickle
 import socket
 import subprocess
+import textwrap
 from datetime import datetime
 from moviepy import ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip
 from PIL import Image, ImageDraw, ImageFont
@@ -68,59 +70,55 @@ def get_next_item(state_key, items, state):
     print(f"   🔄 {state_key}: was {idx}, now {state[state_key]} (next: {item[:40]}...)")
     return item
 
-# ===== VERY LARGE FONT SIZES (readable on mobile) =====
-def create_text_overlay(text, duration, font_size=160, margin=40, bg_alpha=220):
+# ===== TEXT RENDERING – exactly like the working affirmation script =====
+def create_text_overlay_like_affirmation(text, duration, font_size=90, bg_color=(0,0,0,200)):
     """
-    Create a semi‑transparent text overlay on a transparent background.
-    Font size is now very large for 9:16 vertical video.
+    Renders text on a transparent background using the same method as the affirmation script.
+    Returns a moviepy ImageClip.
     """
+    # Create a blank RGBA image (transparent background)
     img = Image.new('RGBA', VIDEO_SIZE, (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
+
+    # Load a large, bold font (same as affirmation script but bigger)
     try:
-        font = ImageFont.truetype("arial.ttf", font_size)
-    except:
-        font = ImageFont.load_default()
-
-    # Word wrap – wider area because font is large
-    max_width = VIDEO_SIZE[0] - 2 * margin
-    words = text.split()
-    lines = []
-    current = []
-    for w in words:
-        test = ' '.join(current + [w])
-        bbox = draw.textbbox((0, 0), test, font=font)
-        if bbox[2] - bbox[0] <= max_width:
-            current.append(w)
+        # Try system fonts for bold, large text
+        if sys.platform == "win32":
+            font = ImageFont.truetype("arialbd.ttf", font_size)  # Arial Bold
         else:
-            lines.append(' '.join(current))
-            current = [w]
-    if current:
-        lines.append(' '.join(current))
+            font = ImageFont.truetype("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", font_size)
+    except:
+        try:
+            font = ImageFont.truetype("arial.ttf", font_size)
+        except:
+            font = ImageFont.load_default()
 
-    line_height = font_size + 20   # extra spacing for readability
-    total_h = len(lines) * line_height + 80
-    total_w = 0
-    for line in lines:
+    # Wrap text to fit screen width (leave margins)
+    max_width = VIDEO_SIZE[0] - 100  # 50px margin on each side
+    wrapped_lines = textwrap.wrap(text, width=30)  # 30 chars per line works well on 9:16
+    # Alternative: use PIL to calculate exact width, but textwrap is simpler and matches affirmation script
+
+    # Calculate total text block height
+    line_height = font_size + 15
+    total_height = len(wrapped_lines) * line_height
+    start_y = (VIDEO_SIZE[1] - total_height) // 2
+
+    # Draw each line centered
+    for i, line in enumerate(wrapped_lines):
         bbox = draw.textbbox((0, 0), line, font=font)
-        total_w = max(total_w, bbox[2] - bbox[0])
-    total_w += 80
+        line_width = bbox[2] - bbox[0]
+        x = (VIDEO_SIZE[0] - line_width) // 2
+        y = start_y + i * line_height
+        draw.text((x, y), line, fill=(255, 255, 255), font=font)
 
-    panel_x = (VIDEO_SIZE[0] - total_w) // 2
-    panel_y = (VIDEO_SIZE[1] - total_h) // 2
+    # Add a semi-transparent panel behind text for better readability
+    # (like the affirmation script's template, but we create it dynamically)
+    panel_img = Image.new('RGBA', VIDEO_SIZE, bg_color)
+    # Composite the text over the panel
+    final_img = Image.alpha_composite(panel_img, img)
 
-    panel_img = Image.new('RGBA', (total_w, total_h), (0, 0, 0, bg_alpha))
-    img.paste(panel_img, (panel_x, panel_y), panel_img)
-
-    draw = ImageDraw.Draw(img)
-    y_text = panel_y + 40
-    for line in lines:
-        bbox = draw.textbbox((0, 0), line, font=font)
-        line_w = bbox[2] - bbox[0]
-        x = (VIDEO_SIZE[0] - line_w) // 2
-        draw.text((x, y_text), line, fill=(255, 255, 255), font=font)
-        y_text += line_height
-
-    return ImageClip(np.array(img), duration=duration)
+    # Convert to moviepy clip
+    return ImageClip(np.array(final_img), duration=duration)
 
 def extract_thumbnail_from_video(video_path, output_path, time_offset=0.5):
     try:
@@ -274,7 +272,7 @@ def push_state_to_repo():
 
 def main():
     print("="*60)
-    print("🎬 YouTube Shorts Video Creator (3 A.I. Prompts)")
+    print("🎬 YouTube Shorts Video Creator (3 A.I. Prompts) – Fixed Font")
     print("="*60)
 
     # Load state
@@ -293,7 +291,7 @@ def main():
         print("❌ No prompts found in prompts.json")
         sys.exit(1)
 
-    # Background images
+    # Background images – we still use them behind the text panel
     if not os.path.exists(IMAGES_DIR):
         os.makedirs(IMAGES_DIR)
         print(f"❌ No images folder – create '{IMAGES_DIR}' and add images")
@@ -314,36 +312,40 @@ def main():
 
     clips = []
 
-    # Intro – get the intro text and use it for title later
-    intro_text = get_next_item("intro_index", intros, state)
-    # Clean intro text for title (remove newlines, trim)
-    intro_title = intro_text.replace('\n', ' ').strip()
-    
+    # === INTRO (font size 120, like affirmation script but larger) ===
+    intro_text_raw = get_next_item("intro_index", intros, state)
+    intro_text_clean = intro_text_raw.replace('\n', ' ')
+    # Use the new text rendering function
+    intro_txt_clip = create_text_overlay_like_affirmation(intro_text_raw, INTRO_DURATION, font_size=120, bg_color=(0,0,0,200))
+    # Add background image behind it
     bg_intro = next_background()
     intro_bg = ImageClip(bg_intro).resized(VIDEO_SIZE).with_duration(INTRO_DURATION)
-    intro_txt = create_text_overlay(intro_text, INTRO_DURATION, font_size=160, margin=40, bg_alpha=220)
-    clips.append(CompositeVideoClip([intro_bg, intro_txt]))
+    intro_clip = CompositeVideoClip([intro_bg, intro_txt_clip])
+    clips.append(intro_clip)
 
-    # Prompts (font size 140, was 80)
+    # === PROMPTS (font size 100) ===
     for i, prompt in enumerate(prompts):
+        display_text = f"Prompt {i+1}\n\n{prompt}"
+        txt_clip = create_text_overlay_like_affirmation(display_text, ASSIGNMENT_DURATION, font_size=100, bg_color=(0,0,0,200))
         bg = next_background()
         bg_clip = ImageClip(bg).resized(VIDEO_SIZE).with_duration(ASSIGNMENT_DURATION)
-        display = f"Prompt {i+1}\n\n{prompt}"
-        txt_clip = create_text_overlay(display, ASSIGNMENT_DURATION, font_size=140, margin=40, bg_alpha=220)
-        clips.append(CompositeVideoClip([bg_clip, txt_clip]))
+        combined = CompositeVideoClip([bg_clip, txt_clip])
+        clips.append(combined)
         print(f"   Added Prompt {i+1}")
 
-    # Outro (font size 150)
+    # === OUTRO (font size 110) ===
     outro_text = "✅ Thank you for watching!\n\n👉 Click the link in description\n👉 Join the Creative Daily\n👉 Start your Fortune 500 journey"
+    outro_txt_clip = create_text_overlay_like_affirmation(outro_text, OUTRO_DURATION, font_size=110, bg_color=(0,0,0,200))
     bg_outro = next_background()
     outro_bg = ImageClip(bg_outro).resized(VIDEO_SIZE).with_duration(OUTRO_DURATION)
-    outro_txt = create_text_overlay(outro_text, OUTRO_DURATION, font_size=150, margin=40, bg_alpha=220)
-    clips.append(CompositeVideoClip([outro_bg, outro_txt]))
+    outro_clip = CompositeVideoClip([outro_bg, outro_txt_clip])
+    clips.append(outro_clip)
 
     # Concatenate
     print("🎬 Rendering video...")
     final_video = concatenate_videoclips(clips, method="compose")
 
+    # Add background music if available
     if os.path.exists(MUSIC_FILE):
         audio = AudioFileClip(MUSIC_FILE)
         if audio.duration < final_video.duration:
@@ -368,10 +370,9 @@ def main():
     # Build description with prompts
     prompts_list_text = "\n".join([f"{i+1}. {p}" for i, p in enumerate(prompts)])
     today = datetime.now().strftime("%B %d, %Y")
-    
-    # ----- TITLE: Use the intro text as the first part -----
+    # Title based on intro text
+    intro_title = intro_text_raw.replace('\n', ' ').strip()
     title = f"{intro_title} | {today} | Stupidest Broke Guy #Shorts"
-    # Ensure title is not too long (YouTube allows up to 100 chars)
     if len(title) > 100:
         title = title[:97] + "..."
     
