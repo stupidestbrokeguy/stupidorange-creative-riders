@@ -2,6 +2,8 @@
 """
 Create a YouTube Shorts video for Realtor channel.
 Uses separate JSON files and state file.
+
+UPDATED: Fixed audio loop for moviepy 2.x, added MAX_PROMPTS to keep video under 60s.
 """
 
 import os
@@ -12,18 +14,21 @@ import socket
 import subprocess
 import textwrap
 from datetime import datetime
-from moviepy import ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip
+from moviepy import ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip, concatenate_audioclips
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 # ========== CONFIGURATION (REALTOR VERSION) ==========
-IMAGES_DIR = "images"          # separate folder for Realtor backgrounds (or reuse? we'll use separate)
+IMAGES_DIR = "images"      # separate folder for Realtor backgrounds
 OUTPUT_VIDEO = "realtor_video.mp4"
 ASSIGNMENT_DURATION = 5
 OUTRO_DURATION = 10
 INTRO_DURATION = 5
 VIDEO_SIZE = (1080, 1920)
 MUSIC_FILE = "background_music.mp3"
+
+# Limit prompts to keep video under 60 seconds (5+7*5+10 = 50s). Adjust as needed.
+MAX_PROMPTS = 7   # Set to None to use all prompts
 
 # State and data files (separate from riders)
 STATE_FILE = "state_realtor.json"
@@ -39,7 +44,7 @@ PLAYLIST_DESCRIPTION = """Daily creative prompts for real estate agents to gener
 # Thumbnail settings
 THUMB_WIDTH, THUMB_HEIGHT = 1280, 720
 
-# ========== Helper functions (identical to main script) ==========
+# ========== Helper functions ==========
 def find_free_port(start_port=8080, end_port=8090):
     for port in range(start_port, end_port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -248,7 +253,7 @@ def push_state_to_repo():
 
 def main():
     print("="*60)
-    print("🎬 Realtor Creative Daily – YouTube Shorts Generator")
+    print("🎬 Realtor Creative Daily – YouTube Shorts Generator (Fixed Audio)")
     print("="*60)
 
     # Load state
@@ -262,12 +267,20 @@ def main():
         print(f"📂 Created new state: {state}")
 
     intros = load_json(INTROS_FILE, ["🏠 3 A.I. Prompts\nFor Realtors to Close More Deals"])
-    prompts = load_json(PROMPTS_FILE, [])
-    if not prompts:
+    all_prompts = load_json(PROMPTS_FILE, [])
+    if not all_prompts:
         print("❌ No prompts found in prompts_realtor.json")
         sys.exit(1)
 
-    # Background images (create folder if missing)
+    # Limit prompts if MAX_PROMPTS is set
+    if MAX_PROMPTS is not None and len(all_prompts) > MAX_PROMPTS:
+        prompts = all_prompts[:MAX_PROMPTS]
+        print(f"📋 Using first {len(prompts)} of {len(all_prompts)} prompts (MAX_PROMPTS={MAX_PROMPTS})")
+    else:
+        prompts = all_prompts
+        print(f"📋 Using all {len(prompts)} prompts")
+
+    # Background images
     if not os.path.exists(IMAGES_DIR):
         os.makedirs(IMAGES_DIR)
         print(f"❌ No images folder – create '{IMAGES_DIR}' and add images")
@@ -315,16 +328,29 @@ def main():
 
     final_video = concatenate_videoclips(clips, method="compose")
 
+    # ===== FIXED AUDIO LOOP (moviepy 2.x compatible) =====
     if os.path.exists(MUSIC_FILE):
         audio = AudioFileClip(MUSIC_FILE)
         if audio.duration < final_video.duration:
-            audio = audio.loop(int(final_video.duration / audio.duration) + 1)
-        audio = audio.subclipped(0, final_video.duration).with_volume_scaled(0.3)
+            n = int(final_video.duration / audio.duration) + 1
+            audio = concatenate_audioclips([audio] * n)
+            audio = audio.subclipped(0, final_video.duration)
+        else:
+            audio = audio.subclipped(0, final_video.duration)
+        audio = audio.with_volume_scaled(0.3)
         final_video = final_video.with_audio(audio)
+        print("🎵 Music added")
 
     final_video.write_videofile(OUTPUT_VIDEO, fps=24, codec='libx264', audio_codec='aac')
     size_mb = os.path.getsize(OUTPUT_VIDEO) / (1024 * 1024)
     print(f"✅ Video saved: {OUTPUT_VIDEO} ({size_mb:.1f} MB)")
+
+    total_duration = final_video.duration
+    if total_duration > 60:
+        print(f"⚠️ Warning: Video duration {total_duration:.1f}s exceeds 60s. It may not be treated as a Short.")
+        print(f"   → Reduce MAX_PROMPTS or lower ASSIGNMENT_DURATION.")
+    else:
+        print(f"✅ Video duration {total_duration:.1f}s → eligible for YouTube Shorts.")
 
     # Thumbnail
     if "thumbnail_bg_index" not in state:
@@ -343,7 +369,7 @@ def main():
         title = title[:97] + "..."
 
     prompts_list = "\n".join([f"{i+1}. {p}" for i, p in enumerate(prompts)])
-    description = f"""In this YouTube Short, we give you 3 copy‑paste ChatGPT prompts for real estate agents.
+    description = f"""In this YouTube Short, we give you copy‑paste ChatGPT prompts for real estate agents.
 
 🔥 PROMPTS FOR REALTORS:
 
