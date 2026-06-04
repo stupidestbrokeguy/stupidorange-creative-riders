@@ -3,6 +3,8 @@
 Create a YouTube Shorts video with 3 A.I. prompts, using intro/prompt/background state.
 Generates custom thumbnail from intro text + background image (cycled via state).
 Text rendering uses the same proven method as the affirmation script.
+
+UPDATED: Fixed audio loop for moviepy 2.x, added MAX_PROMPTS to keep video under 60s.
 """
 
 import os
@@ -13,7 +15,7 @@ import socket
 import subprocess
 import textwrap
 from datetime import datetime
-from moviepy import ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip
+from moviepy import ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip, concatenate_audioclips
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
@@ -28,6 +30,9 @@ MUSIC_FILE = "background_music.mp3"
 STATE_FILE = "state.json"
 INTROS_FILE = "intros.json"
 PROMPTS_FILE = "prompts.json"
+
+# Limit prompts to keep video under 60 seconds (5+7*5+10 = 50s). Adjust as needed.
+MAX_PROMPTS = 7   # Set to None to use all prompts
 
 # YouTube playlist settings
 PLAYLIST_TITLE = "3 A.I. Prompts | Stupidest Broke Guy"
@@ -155,7 +160,7 @@ def create_thumbnail_from_intro(intro_text, background_image_path, output_path):
     print(f"   ✅ Thumbnail saved: {output_path}")
     return output_path
 
-# ===== YouTube upload (unchanged) =====
+# ===== YouTube upload =====
 def upload_to_youtube(video_path, title, description, tags, thumbnail_path=None, playlist_id=None):
     try:
         from google.oauth2.credentials import Credentials
@@ -285,10 +290,18 @@ def main():
         print(f"📂 Created new state: {state}")
 
     intros = load_json(INTROS_FILE, ["🔥 3 A.I. Prompts\nFrom Broke to Fortune 500"])
-    prompts = load_json(PROMPTS_FILE, [])
-    if not prompts:
+    all_prompts = load_json(PROMPTS_FILE, [])
+    if not all_prompts:
         print("❌ No prompts found in prompts.json")
         sys.exit(1)
+
+    # Limit prompts if MAX_PROMPTS is set
+    if MAX_PROMPTS is not None and len(all_prompts) > MAX_PROMPTS:
+        prompts = all_prompts[:MAX_PROMPTS]
+        print(f"📋 Using first {len(prompts)} of {len(all_prompts)} prompts (MAX_PROMPTS={MAX_PROMPTS})")
+    else:
+        prompts = all_prompts
+        print(f"📋 Using all {len(prompts)} prompts")
 
     # Load background images
     if not os.path.exists(IMAGES_DIR):
@@ -342,12 +355,17 @@ def main():
     print("🎬 Rendering video...")
     final_video = concatenate_videoclips(clips, method="compose")
 
-    # Add background music if available
+    # ===== FIXED AUDIO LOOP (moviepy 2.x compatible) =====
     if os.path.exists(MUSIC_FILE):
         audio = AudioFileClip(MUSIC_FILE)
         if audio.duration < final_video.duration:
-            audio = audio.loop(int(final_video.duration / audio.duration) + 1)
-        audio = audio.subclipped(0, final_video.duration).with_volume_scaled(0.3)
+            # Loop by concatenating multiple copies
+            n = int(final_video.duration / audio.duration) + 1
+            audio = concatenate_audioclips([audio] * n)
+            audio = audio.subclipped(0, final_video.duration)
+        else:
+            audio = audio.subclipped(0, final_video.duration)
+        audio = audio.with_volume_scaled(0.3)
         final_video = final_video.with_audio(audio)
         print("🎵 Music added")
 
@@ -355,13 +373,14 @@ def main():
     size_mb = os.path.getsize(OUTPUT_VIDEO) / (1024 * 1024)
     print(f"✅ Video saved: {OUTPUT_VIDEO} ({size_mb:.1f} MB)")
 
-    if final_video.duration > 60:
-        print(f"⚠️ Warning: Video duration {final_video.duration:.1f}s exceeds 60s. It may not be treated as a Short.")
+    total_duration = final_video.duration
+    if total_duration > 60:
+        print(f"⚠️ Warning: Video duration {total_duration:.1f}s exceeds 60s. It may not be treated as a Short.")
+        print(f"   → Reduce MAX_PROMPTS or lower ASSIGNMENT_DURATION.")
     else:
-        print(f"✅ Video duration {final_video.duration:.1f}s → eligible for YouTube Shorts.")
+        print(f"✅ Video duration {total_duration:.1f}s → eligible for YouTube Shorts.")
 
     # --- Create Thumbnail using intro text + a background image (cycled separately) ---
-    # Separate state for thumbnail background so it doesn't conflict with video backgrounds
     if "thumbnail_bg_index" not in state:
         state["thumbnail_bg_index"] = 0
     thumb_bg_idx = state["thumbnail_bg_index"] % len(bg_files)
@@ -380,7 +399,7 @@ def main():
         title = title[:97] + "..."
 
     prompts_list = "\n".join([f"{i+1}. {p}" for i, p in enumerate(prompts)])
-    description = f"""In this YouTube Short, we give you 3 copy‑paste ChatGPT prompts to turn your idea into a Fortune 500 strategy, based on real historical research.
+    description = f"""In this YouTube Short, we give you copy‑paste ChatGPT prompts to turn your idea into a Fortune 500 strategy, based on real historical research.
 
 🔥 THE PROMPTS (copy & paste into ChatGPT):
 
