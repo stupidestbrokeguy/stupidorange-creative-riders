@@ -17,7 +17,7 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 # ========== CONFIGURATION (REALTOR VERSION) ==========
-IMAGES_DIR = "images_realtor"          # separate folder for Realtor backgrounds (or reuse? we'll use separate)
+IMAGES_DIR = "images"          # separate folder for Realtor backgrounds (or reuse? we'll use separate)
 OUTPUT_VIDEO = "realtor_video.mp4"
 ASSIGNMENT_DURATION = 5
 OUTRO_DURATION = 10
