@@ -66,16 +66,21 @@ def get_next_item(state_key, items, state):
     save_state(state)
     return item
 
-def create_text_overlay(text, duration, font_size=60, margin=80, bg_alpha=180):
-    """Create a semi‑transparent text overlay on a transparent background."""
+# ===== FIX 1: LARGER FONT SIZES =====
+def create_text_overlay(text, duration, font_size=80, margin=60, bg_alpha=200):
+    """
+    Create a semi‑transparent text overlay on a transparent background.
+    Font size increased for better readability on 9:16 vertical video.
+    """
     img = Image.new('RGBA', VIDEO_SIZE, (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     try:
+        # Use a bold, larger font
         font = ImageFont.truetype("arial.ttf", font_size)
     except:
         font = ImageFont.load_default()
 
-    # Word wrap
+    # Word wrap (max width reduced because font is larger)
     max_width = VIDEO_SIZE[0] - 2 * margin
     words = text.split()
     lines = []
@@ -91,13 +96,13 @@ def create_text_overlay(text, duration, font_size=60, margin=80, bg_alpha=180):
     if current:
         lines.append(' '.join(current))
 
-    line_height = font_size + 10
-    total_h = len(lines) * line_height + 40
+    line_height = font_size + 15   # extra spacing
+    total_h = len(lines) * line_height + 60
     total_w = 0
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
         total_w = max(total_w, bbox[2] - bbox[0])
-    total_w += 40
+    total_w += 60
 
     panel_x = (VIDEO_SIZE[0] - total_w) // 2
     panel_y = (VIDEO_SIZE[1] - total_h) // 2
@@ -106,7 +111,7 @@ def create_text_overlay(text, duration, font_size=60, margin=80, bg_alpha=180):
     img.paste(panel_img, (panel_x, panel_y), panel_img)
 
     draw = ImageDraw.Draw(img)
-    y_text = panel_y + 20
+    y_text = panel_y + 30
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font)
         line_w = bbox[2] - bbox[0]
@@ -130,33 +135,27 @@ def extract_thumbnail_from_video(video_path, output_path, time_offset=0.5):
 
     print(f"🎬 Extracting thumbnail from {video_path} at t={time_offset}s")
     clip = VideoFileClip(video_path)
-    # Ensure time_offset is within video duration
     if time_offset > clip.duration:
         time_offset = clip.duration * 0.5
     frame = clip.get_frame(time_offset)
     clip.close()
 
-    # Convert to PIL Image
     img = Image.fromarray(frame.astype('uint8'), 'RGB')
     original_w, original_h = img.size
     print(f"   Original frame: {original_w}x{original_h}")
 
-    # Crop to 16:9 (center)
-    target_ratio = THUMBNAIL_SIZE[0] / THUMBNAIL_SIZE[1]  # 1280/720 = 16/9
+    target_ratio = THUMBNAIL_SIZE[0] / THUMBNAIL_SIZE[1]
     current_ratio = original_w / original_h
 
     if current_ratio > target_ratio:
-        # Too wide – crop width
         new_w = int(original_h * target_ratio)
         offset_x = (original_w - new_w) // 2
         img = img.crop((offset_x, 0, offset_x + new_w, original_h))
     else:
-        # Too tall – crop height
         new_h = int(original_w / target_ratio)
         offset_y = (original_h - new_h) // 2
         img = img.crop((0, offset_y, original_w, offset_y + new_h))
 
-    # Resize to 1280x720
     img = img.resize(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
     img.save(output_path, quality=90)
     print(f"   Thumbnail saved to {output_path} ({THUMBNAIL_SIZE[0]}x{THUMBNAIL_SIZE[1]})")
@@ -202,7 +201,6 @@ def upload_to_youtube(video_path, title, description, tags, thumbnail_path=None,
 
     youtube = build('youtube', 'v3', credentials=credentials)
 
-    # Get or create playlist
     if not playlist_id:
         playlists = youtube.playlists().list(part='snippet', mine=True, maxResults=50).execute()
         for pl in playlists.get('items', []):
@@ -224,7 +222,7 @@ def upload_to_youtube(video_path, title, description, tags, thumbnail_path=None,
             'title': title[:100],
             'description': description[:5000],
             'tags': tags,
-            'categoryId': '22'  # People & Blogs
+            'categoryId': '22'
         },
         'status': {'privacyStatus': 'public', 'selfDeclaredMadeForKids': False}
     }
@@ -234,7 +232,6 @@ def upload_to_youtube(video_path, title, description, tags, thumbnail_path=None,
     video_id = response['id']
     video_url = f"https://youtu.be/{video_id}"
 
-    # Upload custom thumbnail if provided
     if thumbnail_path and os.path.exists(thumbnail_path):
         try:
             youtube.thumbnails().set(
@@ -245,7 +242,6 @@ def upload_to_youtube(video_path, title, description, tags, thumbnail_path=None,
         except Exception as e:
             print(f"   ⚠️ Could not upload custom thumbnail: {e}")
 
-    # Add to playlist
     youtube.playlistItems().insert(
         part='snippet',
         body={
@@ -310,33 +306,32 @@ def main():
 
     clips = []
 
-    # Intro
+    # Intro (font size 90, larger)
     intro_text = get_next_item("intro_index", intros, state)
     bg_intro = next_background()
     intro_bg = ImageClip(bg_intro).resized(VIDEO_SIZE).with_duration(INTRO_DURATION)
-    intro_txt = create_text_overlay(intro_text, INTRO_DURATION, font_size=70)
+    intro_txt = create_text_overlay(intro_text, INTRO_DURATION, font_size=90, margin=50)
     clips.append(CompositeVideoClip([intro_bg, intro_txt]))
 
-    # Prompts (all in prompts.json)
+    # Prompts (font size 70, was 45)
     for i, prompt in enumerate(prompts):
         bg = next_background()
         bg_clip = ImageClip(bg).resized(VIDEO_SIZE).with_duration(ASSIGNMENT_DURATION)
         display = f"Prompt {i+1}\n\n{prompt}"
-        txt_clip = create_text_overlay(display, ASSIGNMENT_DURATION, font_size=45)
+        txt_clip = create_text_overlay(display, ASSIGNMENT_DURATION, font_size=70, margin=50)
         clips.append(CompositeVideoClip([bg_clip, txt_clip]))
 
-    # Outro
+    # Outro (font size 80, was 55)
     outro_text = "✅ Thank you for watching!\n\n👉 Click the link in description\n👉 Join the Creative Daily\n👉 Start your Fortune 500 journey"
     bg_outro = next_background()
     outro_bg = ImageClip(bg_outro).resized(VIDEO_SIZE).with_duration(OUTRO_DURATION)
-    outro_txt = create_text_overlay(outro_text, OUTRO_DURATION, font_size=55)
+    outro_txt = create_text_overlay(outro_text, OUTRO_DURATION, font_size=80, margin=50)
     clips.append(CompositeVideoClip([outro_bg, outro_txt]))
 
     # Concatenate
     print("🎬 Rendering video...")
     final_video = concatenate_videoclips(clips, method="compose")
 
-    # Add background music if available
     if os.path.exists(MUSIC_FILE):
         audio = AudioFileClip(MUSIC_FILE)
         if audio.duration < final_video.duration:
@@ -349,25 +344,32 @@ def main():
     size_mb = os.path.getsize(OUTPUT_VIDEO) / (1024 * 1024)
     print(f"✅ Video saved: {OUTPUT_VIDEO} ({size_mb:.1f} MB)")
 
-    # Check video duration (must be ≤60s for Shorts)
     if final_video.duration > 60:
         print(f"⚠️ Warning: Video duration {final_video.duration:.1f}s exceeds 60s. It may not be treated as a Short.")
     else:
         print(f"✅ Video duration {final_video.duration:.1f}s → eligible for YouTube Shorts.")
 
-    # Extract thumbnail from intro (first 1 second)
+    # Extract thumbnail from intro
     thumbnail_file = OUTPUT_VIDEO.replace('.mp4', '_thumbnail.jpg')
     extract_thumbnail_from_video(OUTPUT_VIDEO, thumbnail_file, time_offset=1.0)
 
-    # Upload to YouTube
-    print("\n📤 Uploading to YouTube...")
+    # ===== FIX 2: ADD PROMPTS TO DESCRIPTION =====
+    # Build a formatted list of prompts for the YouTube description
+    prompts_list_text = "\n".join([f"{i+1}. {p}" for i, p in enumerate(prompts)])
+
     today = datetime.now().strftime("%B %d, %Y")
     title = f"3 A.I. Prompts to Go from Broke to Fortune 500 | {today} | Stupidest Broke Guy #Shorts"
     description = f"""In this YouTube Short, we give you 3 copy‑paste ChatGPT prompts to turn your idea into a Fortune 500 strategy, based on real historical research.
 
-🔥 Prompt 1 – Dumb Prototype
-🔥 Prompt 2 – Scrappy Scale (rent machines)
-🔥 Prompt 3 – Boring Monopoly
+🔥 THE PROMPTS (copy & paste into ChatGPT):
+
+{prompts_list_text}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 How to use:
+1. Copy the prompt that matches your stage (idea, prototype, scaling)
+2. Paste into ChatGPT
+3. Follow the AI's step‑by‑step plan
 
 Join the Creative Daily community: creativedaily.stupidorange.com
 
@@ -378,10 +380,8 @@ Join the Creative Daily community: creativedaily.stupidorange.com
 
     if video_url:
         print(f"✅ YouTube upload successful: {video_url}")
-        # Clean up temporary thumbnail
         if os.path.exists(thumbnail_file):
             os.remove(thumbnail_file)
-        # Push state changes to repo
         push_state_to_repo()
     else:
         print("⚠️ YouTube upload failed (check secrets and token).")
