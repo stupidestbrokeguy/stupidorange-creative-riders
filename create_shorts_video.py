@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Create a YouTube Shorts video with 3 A.I. prompts, using intro/prompt/background state,
-extract a thumbnail from the intro, upload to YouTube, and push state back to GitHub.
+Create a YouTube Shorts video with 3 A.I. prompts, using intro/prompt/background state.
+Generates custom thumbnail from intro text + background image (cycled via state).
 Text rendering uses the same proven method as the affirmation script.
 """
 
@@ -35,8 +35,8 @@ PLAYLIST_DESCRIPTION = """Weekly prompts to go from broke to Fortune 500 using A
 
 #StupidestBrokeGuy #AIprompts #Fortune500 #Dubai #UAE #Shorts"""
 
-# Thumbnail settings – YouTube custom thumbnail size (16:9, 1280x720)
-THUMBNAIL_SIZE = (1280, 720)
+# Thumbnail settings (16:9, 1280x720)
+THUMB_WIDTH, THUMB_HEIGHT = 1280, 720
 
 # ========== Helper functions ==========
 def find_free_port(start_port=8080, end_port=8090):
@@ -58,7 +58,7 @@ def load_json(filepath, default_list):
 def save_state(state):
     with open(STATE_FILE, 'w', encoding='utf-8') as f:
         json.dump(state, f, indent=2)
-    print(f"💾 State saved to {STATE_FILE}: intro_index={state.get('intro_index')}, prompt_index={state.get('prompt_index')}, background_index={state.get('background_index')}")
+    print(f"💾 State saved to {STATE_FILE}: intro_index={state.get('intro_index')}, background_index={state.get('background_index')}, thumbnail_bg_index={state.get('thumbnail_bg_index', 0)}")
 
 def get_next_item(state_key, items, state):
     if not items:
@@ -70,21 +70,16 @@ def get_next_item(state_key, items, state):
     print(f"   🔄 {state_key}: was {idx}, now {state[state_key]} (next: {item[:40]}...)")
     return item
 
-# ===== TEXT RENDERING – exactly like the working affirmation script =====
-def create_text_overlay_like_affirmation(text, duration, font_size=90, bg_color=(0,0,0,200)):
-    """
-    Renders text on a transparent background using the same method as the affirmation script.
-    Returns a moviepy ImageClip.
-    """
-    # Create a blank RGBA image (transparent background)
+# ===== TEXT RENDERING for video (9:16) =====
+def create_text_overlay(text, duration, font_size=90, bg_color=(0,0,0,200)):
+    """Renders text on a transparent background, composites over a semi‑transparent black panel."""
     img = Image.new('RGBA', VIDEO_SIZE, (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # Load a large, bold font (same as affirmation script but bigger)
+    # Load font
     try:
-        # Try system fonts for bold, large text
         if sys.platform == "win32":
-            font = ImageFont.truetype("arialbd.ttf", font_size)  # Arial Bold
+            font = ImageFont.truetype("arialbd.ttf", font_size)
         else:
             font = ImageFont.truetype("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", font_size)
     except:
@@ -93,17 +88,14 @@ def create_text_overlay_like_affirmation(text, duration, font_size=90, bg_color=
         except:
             font = ImageFont.load_default()
 
-    # Wrap text to fit screen width (leave margins)
-    max_width = VIDEO_SIZE[0] - 100  # 50px margin on each side
-    wrapped_lines = textwrap.wrap(text, width=30)  # 30 chars per line works well on 9:16
-    # Alternative: use PIL to calculate exact width, but textwrap is simpler and matches affirmation script
+    # Wrap text
+    max_chars = 30
+    wrapped_lines = textwrap.wrap(text, width=max_chars)
 
-    # Calculate total text block height
     line_height = font_size + 15
     total_height = len(wrapped_lines) * line_height
     start_y = (VIDEO_SIZE[1] - total_height) // 2
 
-    # Draw each line centered
     for i, line in enumerate(wrapped_lines):
         bbox = draw.textbbox((0, 0), line, font=font)
         line_width = bbox[2] - bbox[0]
@@ -111,50 +103,59 @@ def create_text_overlay_like_affirmation(text, duration, font_size=90, bg_color=
         y = start_y + i * line_height
         draw.text((x, y), line, fill=(255, 255, 255), font=font)
 
-    # Add a semi-transparent panel behind text for better readability
-    # (like the affirmation script's template, but we create it dynamically)
-    panel_img = Image.new('RGBA', VIDEO_SIZE, bg_color)
-    # Composite the text over the panel
-    final_img = Image.alpha_composite(panel_img, img)
+    panel = Image.new('RGBA', VIDEO_SIZE, bg_color)
+    final = Image.alpha_composite(panel, img)
+    return ImageClip(np.array(final), duration=duration)
 
-    # Convert to moviepy clip
-    return ImageClip(np.array(final_img), duration=duration)
+# ===== THUMBNAIL generation (16:9) with background image + intro text =====
+def create_thumbnail_from_intro(intro_text, background_image_path, output_path):
+    """Create a 1280x720 thumbnail using a background image and intro text."""
+    print(f"🖼️ Creating thumbnail: {output_path}")
+    bg = Image.open(background_image_path).convert('RGB')
+    bg = bg.resize((THUMB_WIDTH, THUMB_HEIGHT), Image.Resampling.LANCZOS)
+    draw = ImageDraw.Draw(bg)
 
-def extract_thumbnail_from_video(video_path, output_path, time_offset=0.5):
+    # Load font (slightly smaller for thumbnail)
+    font_size = 80
     try:
-        from moviepy import VideoFileClip
-    except ImportError:
-        print("   ❌ moviepy not available for thumbnail extraction")
-        return None
+        if sys.platform == "win32":
+            font = ImageFont.truetype("arialbd.ttf", font_size)
+        else:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", font_size)
+    except:
+        try:
+            font = ImageFont.truetype("arial.ttf", font_size)
+        except:
+            font = ImageFont.load_default()
 
-    print(f"🎬 Extracting thumbnail from {video_path} at t={time_offset}s")
-    clip = VideoFileClip(video_path)
-    if time_offset > clip.duration:
-        time_offset = clip.duration * 0.5
-    frame = clip.get_frame(time_offset)
-    clip.close()
+    # Clean and wrap intro text
+    clean_text = intro_text.replace('\n', ' ')
+    wrapped = textwrap.wrap(clean_text, width=25)  # 25 chars fits 1280px
 
-    img = Image.fromarray(frame.astype('uint8'), 'RGB')
-    original_w, original_h = img.size
-    print(f"   Original frame: {original_w}x{original_h}")
+    line_height = font_size + 15
+    total_h = len(wrapped) * line_height
+    start_y = (THUMB_HEIGHT - total_h) // 2
 
-    target_ratio = THUMBNAIL_SIZE[0] / THUMBNAIL_SIZE[1]
-    current_ratio = original_w / original_h
+    # Add semi-transparent black bar behind text
+    bar_height = total_h + 40
+    bar_y = start_y - 20
+    bar = Image.new('RGBA', (THUMB_WIDTH, bar_height), (0, 0, 0, 180))
+    bg.paste(bar, (0, bar_y), bar)
 
-    if current_ratio > target_ratio:
-        new_w = int(original_h * target_ratio)
-        offset_x = (original_w - new_w) // 2
-        img = img.crop((offset_x, 0, offset_x + new_w, original_h))
-    else:
-        new_h = int(original_w / target_ratio)
-        offset_y = (original_h - new_h) // 2
-        img = img.crop((0, offset_y, original_w, offset_y + new_h))
+    # Draw text
+    draw = ImageDraw.Draw(bg)
+    for i, line in enumerate(wrapped):
+        bbox = draw.textbbox((0, 0), line, font=font)
+        line_w = bbox[2] - bbox[0]
+        x = (THUMB_WIDTH - line_w) // 2
+        y = start_y + i * line_height
+        draw.text((x, y), line, fill=(255, 255, 255), font=font)
 
-    img = img.resize(THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
-    img.save(output_path, quality=90)
-    print(f"   Thumbnail saved to {output_path} ({THUMBNAIL_SIZE[0]}x{THUMBNAIL_SIZE[1]})")
+    bg.save(output_path, quality=90)
+    print(f"   ✅ Thumbnail saved: {output_path}")
     return output_path
 
+# ===== YouTube upload (unchanged) =====
 def upload_to_youtube(video_path, title, description, tags, thumbnail_path=None, playlist_id=None):
     try:
         from google.oauth2.credentials import Credentials
@@ -251,15 +252,12 @@ def push_state_to_repo():
     try:
         subprocess.run(["git", "config", "user.name", "github-actions"], check=True, capture_output=True)
         subprocess.run(["git", "config", "user.email", "github-actions@github.com"], check=True, capture_output=True)
-        
         subprocess.run(["git", "add", STATE_FILE, INTROS_FILE, PROMPTS_FILE], check=True, capture_output=True)
-        
         result = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
         if result.returncode != 0:
             commit_msg = f"Update state after video upload {datetime.now().isoformat()} [skip ci]"
             subprocess.run(["git", "commit", "-m", commit_msg], check=True, capture_output=True)
             print(f"   ✅ Committed state with message: {commit_msg[:60]}...")
-            
             push_result = subprocess.run(["git", "push"], capture_output=True, text=True)
             if push_result.returncode == 0:
                 print("   ✅ State files pushed to repository")
@@ -270,9 +268,10 @@ def push_state_to_repo():
     except Exception as e:
         print(f"   ❌ Failed to push state: {e}")
 
+# ===== MAIN =====
 def main():
     print("="*60)
-    print("🎬 YouTube Shorts Video Creator (3 A.I. Prompts) – Fixed Font")
+    print("🎬 YouTube Shorts Video Creator – Custom Thumbnail with Intro Text & Background")
     print("="*60)
 
     # Load state
@@ -281,7 +280,7 @@ def main():
             state = json.load(f)
         print(f"📂 Loaded state: {state}")
     else:
-        state = {"intro_index": 0, "prompt_index": 0, "background_index": 0}
+        state = {"intro_index": 0, "background_index": 0, "thumbnail_bg_index": 0}
         save_state(state)
         print(f"📂 Created new state: {state}")
 
@@ -291,7 +290,7 @@ def main():
         print("❌ No prompts found in prompts.json")
         sys.exit(1)
 
-    # Background images – we still use them behind the text panel
+    # Load background images
     if not os.path.exists(IMAGES_DIR):
         os.makedirs(IMAGES_DIR)
         print(f"❌ No images folder – create '{IMAGES_DIR}' and add images")
@@ -310,36 +309,34 @@ def main():
         print(f"   🖼️ background_index: was {idx}, now {state['background_index']} (next bg: {os.path.basename(bg_files[idx])})")
         return bg_files[idx]
 
+    # Get intro text and cycle state
+    intro_text = get_next_item("intro_index", intros, state)
+    intro_title = intro_text.replace('\n', ' ').strip()
+
+    # --- Build video clips ---
     clips = []
 
-    # === INTRO (font size 120, like affirmation script but larger) ===
-    intro_text_raw = get_next_item("intro_index", intros, state)
-    intro_text_clean = intro_text_raw.replace('\n', ' ')
-    # Use the new text rendering function
-    intro_txt_clip = create_text_overlay_like_affirmation(intro_text_raw, INTRO_DURATION, font_size=80, bg_color=(0,0,0,200))
-    # Add background image behind it
-    bg_intro = next_background()
-    intro_bg = ImageClip(bg_intro).resized(VIDEO_SIZE).with_duration(INTRO_DURATION)
-    intro_clip = CompositeVideoClip([intro_bg, intro_txt_clip])
-    clips.append(intro_clip)
+    # Intro video clip (5s)
+    intro_bg = next_background()
+    intro_bg_clip = ImageClip(intro_bg).resized(VIDEO_SIZE).with_duration(INTRO_DURATION)
+    intro_text_clip = create_text_overlay(intro_text, INTRO_DURATION, font_size=90, bg_color=(0,0,0,200))
+    clips.append(CompositeVideoClip([intro_bg_clip, intro_text_clip]))
 
-    # === PROMPTS (font size 100) ===
+    # Prompts (each 5s)
     for i, prompt in enumerate(prompts):
         display_text = f"Prompt {i+1}\n\n{prompt}"
-        txt_clip = create_text_overlay_like_affirmation(display_text, ASSIGNMENT_DURATION, font_size=70, bg_color=(0,0,0,200))
         bg = next_background()
         bg_clip = ImageClip(bg).resized(VIDEO_SIZE).with_duration(ASSIGNMENT_DURATION)
-        combined = CompositeVideoClip([bg_clip, txt_clip])
-        clips.append(combined)
+        txt_clip = create_text_overlay(display_text, ASSIGNMENT_DURATION, font_size=75, bg_color=(0,0,0,200))
+        clips.append(CompositeVideoClip([bg_clip, txt_clip]))
         print(f"   Added Prompt {i+1}")
 
-    # === OUTRO (font size 110) ===
+    # Outro (10s)
     outro_text = "✅ Thank you for watching!\n\n👉 Click the link in description\n👉 Join the Creative Daily\n👉 Start your Fortune 500 journey"
-    outro_txt_clip = create_text_overlay_like_affirmation(outro_text, OUTRO_DURATION, font_size=60, bg_color=(0,0,0,200))
-    bg_outro = next_background()
-    outro_bg = ImageClip(bg_outro).resized(VIDEO_SIZE).with_duration(OUTRO_DURATION)
-    outro_clip = CompositeVideoClip([outro_bg, outro_txt_clip])
-    clips.append(outro_clip)
+    outro_bg = next_background()
+    outro_bg_clip = ImageClip(outro_bg).resized(VIDEO_SIZE).with_duration(OUTRO_DURATION)
+    outro_txt_clip = create_text_overlay(outro_text, OUTRO_DURATION, font_size=85, bg_color=(0,0,0,200))
+    clips.append(CompositeVideoClip([outro_bg_clip, outro_txt_clip]))
 
     # Concatenate
     print("🎬 Rendering video...")
@@ -363,24 +360,31 @@ def main():
     else:
         print(f"✅ Video duration {final_video.duration:.1f}s → eligible for YouTube Shorts.")
 
-    # Extract thumbnail
-    thumbnail_file = OUTPUT_VIDEO.replace('.mp4', '_thumbnail.jpg')
-    extract_thumbnail_from_video(OUTPUT_VIDEO, thumbnail_file, time_offset=1.0)
+    # --- Create Thumbnail using intro text + a background image (cycled separately) ---
+    # Separate state for thumbnail background so it doesn't conflict with video backgrounds
+    if "thumbnail_bg_index" not in state:
+        state["thumbnail_bg_index"] = 0
+    thumb_bg_idx = state["thumbnail_bg_index"] % len(bg_files)
+    thumb_bg_path = bg_files[thumb_bg_idx]
+    state["thumbnail_bg_index"] = (thumb_bg_idx + 1) % len(bg_files)
+    save_state(state)
+    print(f"🖼️ Thumbnail background: {os.path.basename(thumb_bg_path)} (index {state['thumbnail_bg_index']})")
 
-    # Build description with prompts
-    prompts_list_text = "\n".join([f"{i+1}. {p}" for i, p in enumerate(prompts)])
+    thumbnail_file = OUTPUT_VIDEO.replace('.mp4', '_thumbnail.jpg')
+    create_thumbnail_from_intro(intro_text, thumb_bg_path, thumbnail_file)
+
+    # --- Prepare YouTube metadata ---
     today = datetime.now().strftime("%B %d, %Y")
-    # Title based on intro text
-    intro_title = intro_text_raw.replace('\n', ' ').strip()
     title = f"{intro_title} | {today} | Stupidest Broke Guy #Shorts"
     if len(title) > 100:
         title = title[:97] + "..."
-    
+
+    prompts_list = "\n".join([f"{i+1}. {p}" for i, p in enumerate(prompts)])
     description = f"""In this YouTube Short, we give you 3 copy‑paste ChatGPT prompts to turn your idea into a Fortune 500 strategy, based on real historical research.
 
 🔥 THE PROMPTS (copy & paste into ChatGPT):
 
-{prompts_list_text}
+{prompts_list}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💡 How to use:
@@ -393,13 +397,12 @@ Join the Creative Daily community: creativedaily.stupidorange.com
 #StupidestBrokeGuy #AIprompts #Fortune500 #Dubai #UAE #ChatGPT #StartupHacks #Shorts
 """
     tags = ["StupidestBrokeGuy", "AIprompts", "Fortune500", "Dubai", "UAE", "ChatGPT", "Startup", "Shorts"]
-    
-    # Upload to YouTube
+
+    # --- Upload to YouTube ---
     print("\n📤 Uploading to YouTube...")
-    print(f"   Title: {title}")
     video_url = upload_to_youtube(OUTPUT_VIDEO, title, description, tags, thumbnail_path=thumbnail_file)
 
-    # Always push state, even if upload fails
+    # --- Push state (including thumbnail bg index) to GitHub ---
     print("\n📁 Pushing state to GitHub...")
     push_state_to_repo()
 
