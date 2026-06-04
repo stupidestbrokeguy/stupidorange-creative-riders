@@ -316,7 +316,7 @@ def main():
     intro_text_raw = get_next_item("intro_index", intros, state)
     intro_text_clean = intro_text_raw.replace('\n', ' ')
     # Use the new text rendering function
-    intro_txt_clip = create_text_overlay_like_affirmation(intro_text_raw, INTRO_DURATION, font_size=120, bg_color=(0,0,0,200))
+    intro_txt_clip = create_text_overlay_like_affirmation(intro_text_raw, INTRO_DURATION, font_size=80, bg_color=(0,0,0,200))
     # Add background image behind it
     bg_intro = next_background()
     intro_bg = ImageClip(bg_intro).resized(VIDEO_SIZE).with_duration(INTRO_DURATION)
@@ -326,7 +326,7 @@ def main():
     # === PROMPTS (font size 100) ===
     for i, prompt in enumerate(prompts):
         display_text = f"Prompt {i+1}\n\n{prompt}"
-        txt_clip = create_text_overlay_like_affirmation(display_text, ASSIGNMENT_DURATION, font_size=100, bg_color=(0,0,0,200))
+        txt_clip = create_text_overlay_like_affirmation(display_text, ASSIGNMENT_DURATION, font_size=70, bg_color=(0,0,0,200))
         bg = next_background()
         bg_clip = ImageClip(bg).resized(VIDEO_SIZE).with_duration(ASSIGNMENT_DURATION)
         combined = CompositeVideoClip([bg_clip, txt_clip])
@@ -335,7 +335,7 @@ def main():
 
     # === OUTRO (font size 110) ===
     outro_text = "✅ Thank you for watching!\n\n👉 Click the link in description\n👉 Join the Creative Daily\n👉 Start your Fortune 500 journey"
-    outro_txt_clip = create_text_overlay_like_affirmation(outro_text, OUTRO_DURATION, font_size=110, bg_color=(0,0,0,200))
+    outro_txt_clip = create_text_overlay_like_affirmation(outro_text, OUTRO_DURATION, font_size=60, bg_color=(0,0,0,200))
     bg_outro = next_background()
     outro_bg = ImageClip(bg_outro).resized(VIDEO_SIZE).with_duration(OUTRO_DURATION)
     outro_clip = CompositeVideoClip([outro_bg, outro_txt_clip])
