@@ -1,10 +1,10 @@
 name: Upload Realtor Lambo Daily
 
-on:
-  schedule:
-    # Runs daily at 8:00 AM Dubai time (4:00 UTC) – different from riders channel
-    - cron: '0 4 * * *'
-  workflow_dispatch:
+# on:
+#   schedule:
+#     # Runs daily at 8:00 AM Dubai time (4:00 UTC) – different from riders channel
+#     - cron: '0 4 * * *'
+#   workflow_dispatch:
 
 jobs:
   upload:
