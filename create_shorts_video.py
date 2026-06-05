@@ -2,9 +2,12 @@
 """
 Create a YouTube Shorts video with 3 A.I. prompts, using intro/prompt/background state.
 Generates custom thumbnail from intro text + background image (cycled via state).
-Text rendering uses the same proven method as the affirmation script.
 
-UPDATED: Fixed audio loop for moviepy 2.x, added MAX_PROMPTS to keep video under 60s.
+UPDATED: 
+- Prompt rotation (never repeats same block until all prompts exhausted)
+- Thumbnail delay & error handling
+- Duration check to keep video under 60s
+- Better state logging
 """
 
 import os
@@ -14,6 +17,7 @@ import pickle
 import socket
 import subprocess
 import textwrap
+import time
 from datetime import datetime
 from moviepy import ImageClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip, concatenate_audioclips
 from PIL import Image, ImageDraw, ImageFont
@@ -31,16 +35,16 @@ STATE_FILE = "state.json"
 INTROS_FILE = "intros.json"
 PROMPTS_FILE = "prompts.json"
 
-# Limit prompts to keep video under 60 seconds (5+7*5+10 = 50s). Adjust as needed.
-MAX_PROMPTS = 7   # Set to None to use all prompts
+# Limit prompts to keep video under 60 seconds (5 + 7*5 + 10 = 50s)
+MAX_PROMPTS = 7
 
 # YouTube playlist settings
 PLAYLIST_TITLE = "Rags To Riches | Proven Strategies | Creative Daily | Stupidest Broke Guy"
-PLAYLIST_DESCRIPTION = """Daily creative prompts for creativity to rise so you can create Fortune 500  companies using proven strategies by fortune 500 companies.#stupidorange #AIprompts #Shorts
+PLAYLIST_DESCRIPTION = """Daily creative prompts for creativity to rise so you can create Fortune 500 companies using proven strategies by fortune 500 companies.#stupidorange #AIprompts #Shorts
 
 #StupidestBrokeGuy #AIprompts #Fortune500 #Dubai #UAE #Shorts"""
 
-# Thumbnail settings (16:9, 1280x720)
+# Thumbnail settings
 THUMB_WIDTH, THUMB_HEIGHT = 1280, 720
 
 # ========== Helper functions ==========
@@ -63,7 +67,7 @@ def load_json(filepath, default_list):
 def save_state(state):
     with open(STATE_FILE, 'w', encoding='utf-8') as f:
         json.dump(state, f, indent=2)
-    print(f"💾 State saved to {STATE_FILE}: intro_index={state.get('intro_index')}, background_index={state.get('background_index')}, thumbnail_bg_index={state.get('thumbnail_bg_index', 0)}")
+    print(f"💾 State saved to {STATE_FILE}")
 
 def get_next_item(state_key, items, state):
     if not items:
@@ -72,16 +76,12 @@ def get_next_item(state_key, items, state):
     item = items[idx]
     state[state_key] = (idx + 1) % len(items)
     save_state(state)
-    print(f"   🔄 {state_key}: was {idx}, now {state[state_key]} (next: {item[:40]}...)")
+    print(f"   🔄 {state_key}: was {idx}, now {state[state_key]}")
     return item
 
-# ===== TEXT RENDERING for video (9:16) =====
 def create_text_overlay(text, duration, font_size=90, bg_color=(0,0,0,200)):
-    """Renders text on a transparent background, composites over a semi‑transparent black panel."""
     img = Image.new('RGBA', VIDEO_SIZE, (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-
-    # Load font
     try:
         if sys.platform == "win32":
             font = ImageFont.truetype("arialbd.ttf", font_size)
@@ -92,35 +92,26 @@ def create_text_overlay(text, duration, font_size=90, bg_color=(0,0,0,200)):
             font = ImageFont.truetype("arial.ttf", font_size)
         except:
             font = ImageFont.load_default()
-
-    # Wrap text
     max_chars = 30
     wrapped_lines = textwrap.wrap(text, width=max_chars)
-
     line_height = font_size + 15
     total_height = len(wrapped_lines) * line_height
     start_y = (VIDEO_SIZE[1] - total_height) // 2
-
     for i, line in enumerate(wrapped_lines):
         bbox = draw.textbbox((0, 0), line, font=font)
         line_width = bbox[2] - bbox[0]
         x = (VIDEO_SIZE[0] - line_width) // 2
         y = start_y + i * line_height
         draw.text((x, y), line, fill=(255, 255, 255), font=font)
-
     panel = Image.new('RGBA', VIDEO_SIZE, bg_color)
     final = Image.alpha_composite(panel, img)
     return ImageClip(np.array(final), duration=duration)
 
-# ===== THUMBNAIL generation (16:9) with background image + intro text =====
 def create_thumbnail_from_intro(intro_text, background_image_path, output_path):
-    """Create a 1280x720 thumbnail using a background image and intro text."""
     print(f"🖼️ Creating thumbnail: {output_path}")
     bg = Image.open(background_image_path).convert('RGB')
     bg = bg.resize((THUMB_WIDTH, THUMB_HEIGHT), Image.Resampling.LANCZOS)
     draw = ImageDraw.Draw(bg)
-
-    # Load font (slightly smaller for thumbnail)
     font_size = 80
     try:
         if sys.platform == "win32":
@@ -132,22 +123,15 @@ def create_thumbnail_from_intro(intro_text, background_image_path, output_path):
             font = ImageFont.truetype("arial.ttf", font_size)
         except:
             font = ImageFont.load_default()
-
-    # Clean and wrap intro text
     clean_text = intro_text.replace('\n', ' ')
-    wrapped = textwrap.wrap(clean_text, width=25)  # 25 chars fits 1280px
-
+    wrapped = textwrap.wrap(clean_text, width=25)
     line_height = font_size + 15
     total_h = len(wrapped) * line_height
     start_y = (THUMB_HEIGHT - total_h) // 2
-
-    # Add semi-transparent black bar behind text
     bar_height = total_h + 40
     bar_y = start_y - 20
     bar = Image.new('RGBA', (THUMB_WIDTH, bar_height), (0, 0, 0, 180))
     bg.paste(bar, (0, bar_y), bar)
-
-    # Draw text
     draw = ImageDraw.Draw(bg)
     for i, line in enumerate(wrapped):
         bbox = draw.textbbox((0, 0), line, font=font)
@@ -155,12 +139,10 @@ def create_thumbnail_from_intro(intro_text, background_image_path, output_path):
         x = (THUMB_WIDTH - line_w) // 2
         y = start_y + i * line_height
         draw.text((x, y), line, fill=(255, 255, 255), font=font)
-
     bg.save(output_path, quality=90)
     print(f"   ✅ Thumbnail saved: {output_path}")
     return output_path
 
-# ===== YouTube upload =====
 def upload_to_youtube(video_path, title, description, tags, thumbnail_path=None, playlist_id=None):
     try:
         from google.oauth2.credentials import Credentials
@@ -230,6 +212,11 @@ def upload_to_youtube(video_path, title, description, tags, thumbnail_path=None,
     response = request.execute()
     video_id = response['id']
     video_url = f"https://youtu.be/{video_id}"
+    print(f"✅ Video uploaded, ID: {video_id}")
+
+    # Wait a moment for YouTube to process the video before setting thumbnail
+    print("⏳ Waiting 3 seconds for YouTube to process...")
+    time.sleep(3)
 
     if thumbnail_path and os.path.exists(thumbnail_path):
         try:
@@ -237,9 +224,12 @@ def upload_to_youtube(video_path, title, description, tags, thumbnail_path=None,
                 videoId=video_id,
                 media_body=MediaFileUpload(thumbnail_path)
             ).execute()
-            print(f"   🖼️ Custom thumbnail uploaded successfully")
+            print("   ✅ Custom thumbnail set successfully on the video")
         except Exception as e:
-            print(f"   ⚠️ Could not upload custom thumbnail: {e}")
+            print(f"   ⚠️ Could not set custom thumbnail: {e}")
+            print("   The video will use an auto-generated thumbnail instead.")
+    else:
+        print("   ⚠️ No thumbnail file found, skipping thumbnail upload")
 
     youtube.playlistItems().insert(
         part='snippet',
@@ -250,19 +240,19 @@ def upload_to_youtube(video_path, title, description, tags, thumbnail_path=None,
             }
         }
     ).execute()
+    print(f"   📂 Added to playlist: {PLAYLIST_TITLE}")
     return video_url
 
 def push_state_to_repo():
-    """Commit and push state files back to GitHub with [skip ci] to prevent loops."""
     try:
         subprocess.run(["git", "config", "user.name", "github-actions"], check=True, capture_output=True)
         subprocess.run(["git", "config", "user.email", "github-actions@github.com"], check=True, capture_output=True)
         subprocess.run(["git", "add", STATE_FILE, INTROS_FILE, PROMPTS_FILE], check=True, capture_output=True)
         result = subprocess.run(["git", "diff", "--cached", "--quiet"], capture_output=True)
         if result.returncode != 0:
-            commit_msg = f"Update state after video upload {datetime.now().isoformat()} [skip ci]"
+            commit_msg = f"Update third channel state {datetime.now().isoformat()} [skip ci]"
             subprocess.run(["git", "commit", "-m", commit_msg], check=True, capture_output=True)
-            print(f"   ✅ Committed state with message: {commit_msg[:60]}...")
+            print(f"   ✅ Committed third channel state")
             push_result = subprocess.run(["git", "push"], capture_output=True, text=True)
             if push_result.returncode == 0:
                 print("   ✅ State files pushed to repository")
@@ -273,10 +263,9 @@ def push_state_to_repo():
     except Exception as e:
         print(f"   ❌ Failed to push state: {e}")
 
-# ===== MAIN =====
 def main():
     print("="*60)
-    print("🎬 YouTube Shorts Video Creator – Custom Thumbnail with Intro Text & Background")
+    print("🎬 Third Channel – YouTube Shorts Generator (with Prompt Rotation)")
     print("="*60)
 
     # Load state
@@ -285,25 +274,37 @@ def main():
             state = json.load(f)
         print(f"📂 Loaded state: {state}")
     else:
-        state = {"intro_index": 0, "background_index": 0, "thumbnail_bg_index": 0}
+        state = {"intro_index": 0, "background_index": 0, "thumbnail_bg_index": 0, "prompt_offset": 0}
         save_state(state)
         print(f"📂 Created new state: {state}")
 
-    intros = load_json(INTROS_FILE, ["🔥 3 A.I. Prompts\nFrom Broke to Fortune 500"])
+    intros = load_json(INTROS_FILE, ["🔥 3 A.I. Prompts\nFor Your Niche"])
     all_prompts = load_json(PROMPTS_FILE, [])
     if not all_prompts:
         print("❌ No prompts found in prompts.json")
         sys.exit(1)
 
-    # Limit prompts if MAX_PROMPTS is set
-    if MAX_PROMPTS is not None and len(all_prompts) > MAX_PROMPTS:
-        prompts = all_prompts[:MAX_PROMPTS]
-        print(f"📋 Using first {len(prompts)} of {len(all_prompts)} prompts (MAX_PROMPTS={MAX_PROMPTS})")
-    else:
-        prompts = all_prompts
-        print(f"📋 Using all {len(prompts)} prompts")
+    # --- PROMPT ROTATION (never repeat until all used) ---
+    offset = state.get("prompt_offset", 0)
+    prompts = []
+    for i in range(MAX_PROMPTS):
+        idx = (offset + i) % len(all_prompts)
+        prompts.append(all_prompts[idx])
+    # Update offset for next run
+    state["prompt_offset"] = (offset + MAX_PROMPTS) % len(all_prompts)
+    save_state(state)
+    print(f"📋 Using prompts starting at index {offset} (next offset: {state['prompt_offset']})")
+    print(f"   Prompts selected: {prompts[:2]}... (showing first 2)")
 
-    # Load background images
+    # Check video duration
+    estimated_duration = INTRO_DURATION + (len(prompts) * ASSIGNMENT_DURATION) + OUTRO_DURATION
+    if estimated_duration > 60:
+        print(f"⚠️ Estimated duration {estimated_duration}s > 60s. Reduce MAX_PROMPTS or shorten durations.")
+        sys.exit(1)
+    else:
+        print(f"✅ Estimated duration {estimated_duration}s (under 60s limit)")
+
+    # Background images
     if not os.path.exists(IMAGES_DIR):
         os.makedirs(IMAGES_DIR)
         print(f"❌ No images folder – create '{IMAGES_DIR}' and add images")
@@ -319,47 +320,42 @@ def main():
         idx = state["background_index"] % len(bg_files)
         state["background_index"] = (idx + 1) % len(bg_files)
         save_state(state)
-        print(f"   🖼️ background_index: was {idx}, now {state['background_index']} (next bg: {os.path.basename(bg_files[idx])})")
+        print(f"   🖼️ background_index: was {idx}, now {state['background_index']}")
         return bg_files[idx]
 
-    # Get intro text and cycle state
     intro_text = get_next_item("intro_index", intros, state)
     intro_title = intro_text.replace('\n', ' ').strip()
 
-    # --- Build video clips ---
     clips = []
 
-    # Intro video clip (5s)
+    # Intro
     intro_bg = next_background()
     intro_bg_clip = ImageClip(intro_bg).resized(VIDEO_SIZE).with_duration(INTRO_DURATION)
-    intro_text_clip = create_text_overlay(intro_text, INTRO_DURATION, font_size=90, bg_color=(0,0,0,200))
-    clips.append(CompositeVideoClip([intro_bg_clip, intro_text_clip]))
+    intro_txt = create_text_overlay(intro_text, INTRO_DURATION, font_size=90, bg_color=(0,0,0,200))
+    clips.append(CompositeVideoClip([intro_bg_clip, intro_txt]))
 
-    # Prompts (each 5s)
+    # Prompts (rotated)
     for i, prompt in enumerate(prompts):
-        display_text = f"Prompt {i+1}\n\n{prompt}"
+        display = f"Prompt {i+1}\n\n{prompt}"
         bg = next_background()
         bg_clip = ImageClip(bg).resized(VIDEO_SIZE).with_duration(ASSIGNMENT_DURATION)
-        txt_clip = create_text_overlay(display_text, ASSIGNMENT_DURATION, font_size=75, bg_color=(0,0,0,200))
+        txt_clip = create_text_overlay(display, ASSIGNMENT_DURATION, font_size=75, bg_color=(0,0,0,200))
         clips.append(CompositeVideoClip([bg_clip, txt_clip]))
         print(f"   Added Prompt {i+1}")
 
-    # Outro (10s)
-    outro_text = "✅ Thank you for watching!\n\n👉 Click the link in description\n👉 Join the Creative Daily\n👉 Start your Fortune 500 journey"
+    # Outro
+    outro_text = "✅ Thank you for watching!\n\n👉 More prompts in description\n👉 Join the Creative Daily"
     outro_bg = next_background()
     outro_bg_clip = ImageClip(outro_bg).resized(VIDEO_SIZE).with_duration(OUTRO_DURATION)
-    outro_txt_clip = create_text_overlay(outro_text, OUTRO_DURATION, font_size=85, bg_color=(0,0,0,200))
-    clips.append(CompositeVideoClip([outro_bg_clip, outro_txt_clip]))
+    outro_txt = create_text_overlay(outro_text, OUTRO_DURATION, font_size=85, bg_color=(0,0,0,200))
+    clips.append(CompositeVideoClip([outro_bg_clip, outro_txt]))
 
-    # Concatenate
-    print("🎬 Rendering video...")
     final_video = concatenate_videoclips(clips, method="compose")
 
-    # ===== FIXED AUDIO LOOP (moviepy 2.x compatible) =====
+    # Fixed audio loop (moviepy 2.x compatible)
     if os.path.exists(MUSIC_FILE):
         audio = AudioFileClip(MUSIC_FILE)
         if audio.duration < final_video.duration:
-            # Loop by concatenating multiple copies
             n = int(final_video.duration / audio.duration) + 1
             audio = concatenate_audioclips([audio] * n)
             audio = audio.subclipped(0, final_video.duration)
@@ -376,66 +372,58 @@ def main():
     total_duration = final_video.duration
     if total_duration > 60:
         print(f"⚠️ Warning: Video duration {total_duration:.1f}s exceeds 60s. It may not be treated as a Short.")
-        print(f"   → Reduce MAX_PROMPTS or lower ASSIGNMENT_DURATION.")
     else:
         print(f"✅ Video duration {total_duration:.1f}s → eligible for YouTube Shorts.")
 
-    # --- Create Thumbnail using intro text + a background image (cycled separately) ---
+    # Thumbnail
     if "thumbnail_bg_index" not in state:
         state["thumbnail_bg_index"] = 0
-    thumb_bg_idx = state["thumbnail_bg_index"] % len(bg_files)
-    thumb_bg_path = bg_files[thumb_bg_idx]
-    state["thumbnail_bg_index"] = (thumb_bg_idx + 1) % len(bg_files)
+    thumb_idx = state["thumbnail_bg_index"] % len(bg_files)
+    thumb_bg = bg_files[thumb_idx]
+    state["thumbnail_bg_index"] = (thumb_idx + 1) % len(bg_files)
     save_state(state)
-    print(f"🖼️ Thumbnail background: {os.path.basename(thumb_bg_path)} (index {state['thumbnail_bg_index']})")
-
     thumbnail_file = OUTPUT_VIDEO.replace('.mp4', '_thumbnail.jpg')
-    create_thumbnail_from_intro(intro_text, thumb_bg_path, thumbnail_file)
+    create_thumbnail_from_intro(intro_text, thumb_bg, thumbnail_file)
 
-    # --- Prepare YouTube metadata ---
+    # YouTube metadata
     today = datetime.now().strftime("%B %d, %Y")
-    title = f"{intro_title} | {today} | Stupidest Broke Guy #Shorts"
+    title = f"{intro_title} | {today} | Stupidest Broke Guy #creativedaily"
     if len(title) > 100:
         title = title[:97] + "..."
 
     prompts_list = "\n".join([f"{i+1}. {p}" for i, p in enumerate(prompts)])
-    description = f"""In this YouTube Short, we give you copy‑paste ChatGPT prompts to turn your idea into a Fortune 500 strategy, based on real historical research.
+    description = f"""In this YouTube Short, we give you {len(prompts)} copy‑paste ChatGPT prompts for creative ideas to turn into Fortune 500 Companies.
 
-🔥 THE PROMPTS (copy & paste into ChatGPT):
+🔥 THE PROMPTS:
 
 {prompts_list}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💡 How to use:
-1. Copy the prompt that matches your stage (idea, prototype, scaling)
+1. Copy the prompt that matches your stage
 2. Paste into ChatGPT
 3. Follow the AI's step‑by‑step plan
 
-Join the Creative Daily community: creativedaily.stupidorange.com
+Join the Creative Daily: creativedaily.stupidorange.com
 
-#StupidestBrokeGuy #AIprompts #Fortune500 #Dubai #UAE #ChatGPT #StartupHacks #Shorts
-"""
-    tags = ["StupidestBrokeGuy", "AIprompts", "Fortune500", "Dubai", "UAE", "ChatGPT", "Startup", "Shorts"]
+#stupidorange #AIprompts #Shorts #stupidestbrokeguy"""
+    tags = ["stupidorange", "AIprompts", "Shorts"]
 
-    # --- Upload to YouTube ---
     print("\n📤 Uploading to YouTube...")
     video_url = upload_to_youtube(OUTPUT_VIDEO, title, description, tags, thumbnail_path=thumbnail_file)
 
-    # --- Push state (including thumbnail bg index) to GitHub ---
-    print("\n📁 Pushing state to GitHub...")
+    print("\n📁 Pushing third channel state to GitHub...")
     push_state_to_repo()
 
     if video_url:
         print(f"✅ YouTube upload successful: {video_url}")
     else:
-        print("⚠️ YouTube upload failed, but state has been saved and pushed.")
+        print("⚠️ YouTube upload failed, but state saved.")
 
-    # Cleanup
     if os.path.exists(thumbnail_file):
         os.remove(thumbnail_file)
-        print("🧹 Removed temporary thumbnail file")
 
-    print("\n🎉 Script finished.")
+    print("\n🎉 Third channel script finished.")
 
 if __name__ == "__main__":
     main()
