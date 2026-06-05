@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 # ========== CONFIGURATION ==========
-IMAGES_DIR = "images_affirmations"
+IMAGES_DIR = "images"
 OUTPUT_VIDEO = "affirmations_video.mp4"
 ASSIGNMENT_DURATION = 5
 OUTRO_DURATION = 10
