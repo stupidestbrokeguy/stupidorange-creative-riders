@@ -448,9 +448,9 @@ class AssignmentExtractor:
         date_obj = datetime.strptime(target_date, "%Y-%m-%d")
         formatted_date = date_obj.strftime("%B %d, %Y")
 
-        full_title = f"Creative Daily Assignment | {formatted_date} | Stupid Orange"
+        full_title = f"Stop Being Broke!, Do This - | {formatted_date} | Stupid Orange"
         
-        video_description = f"""📋 DAILY ASSIGNMENT - {formatted_date} 📋
+        video_description = f"""📋Stop Being Broke, Do This, DAILY ASSIGNMENT - {formatted_date} 📋
 
 {assignment_text}
 
