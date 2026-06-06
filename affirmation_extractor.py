@@ -318,9 +318,9 @@ class AffirmationExtractor:
         print(f"\n📤 Uploading to YouTube...")
         date_obj = datetime.strptime(target_date, "%Y-%m-%d")
         formatted_date = date_obj.strftime("%B %d, %Y")
-        full_title = f"Creative Daily Affirmation | {formatted_date} | Stupid Orange | Stupid Orange Riders"
+        full_title = f"Stop Being Broke, Say This, | {formatted_date} | Stupid Orange | Stupid Orange Riders"
         
-        video_description = f"""🌟 DAILY AFFIRMATION - {formatted_date} 🌟
+        video_description = f"""🌟 Stop Being Broke! Say This,DAILY AFFIRMATION - {formatted_date} 🌟
 
 {affirmation_text}
 
