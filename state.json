@@ -1,7 +1,7 @@
 {
-  "intro_index": 6,
+  "intro_index": 7,
   "prompt_index": 0,
-  "background_index": 1,
-  "thumbnail_bg_index": 4,
-  "prompt_offset": 14
+  "background_index": 0,
+  "thumbnail_bg_index": 0,
+  "prompt_offset": 21
 }
