@@ -22,8 +22,12 @@ INTROS_FILE = "intros_realtor_affirmations.json"
 AFFIRMATIONS_FILE = "affirmations_realtor.yaml"
 MAX_AFFIRMATIONS = 7
 
-PLAYLIST_TITLE = "Realtor Mindset | Daily Affirmations for Agents"
-PLAYLIST_DESCRIPTION = """Powerful affirmations for real estate agents – build confidence, close more deals.
+PLAYLIST_TITLE = "Secure Creative Realtor Entreprenuer Mindset | Daily Affirmations for Agents,Dubai"
+PLAYLIST_DESCRIPTION = """Are you ready for a Dubai Business Setup or have you already started your journey? Whether you're in the Dubai Fashion Business, enjoy Dubai Shopping, or simply keep up with Dubai news, cultivating the right Entrepreneur Mindset is everything.
+
+In this video, discover how to Secure a Creative Entrepreneur Mindset by using simple Daily Affirmations in Dubai. Say these powerful lines every time you visit Burj Khalifa, Dubai Mall, or a Dubai Restaurant—even while doing Dubai Tourism. Speak to nature with a Creative Royalty Tracking Mindset, and train your brain to default toward building a Passive Wealth System.
+
+Whether you're out enjoying the city or working on your business, let these affirmations align you with success, abundance, and creativity. Watch now and start thinking like a true creative entrepreneur in Dubai.Powerful affirmations for real estate agents – build confidence, close more deals.
 
 #realtor #affirmations #realestate #mindset #shorts"""
 
@@ -288,7 +292,12 @@ def main():
     if len(title) > 100:
         title = title[:97] + "..."
     aff_list = "\n".join([f"{i+1}. {a}" for i,a in enumerate(affs)])
-    desc = f"Daily affirmations for real estate agents.\n\n📿 REPEAT:\n{aff_list}\n\n#realtor #affirmations #realestate #shorts"
+    desc = f"Daily Creative Entreprenuer Mindset affirmations for real estate agents in Dubai.\n\n📿
+    Are you ready for a Dubai Business Setup or have you already started your journey? Whether you're in the Dubai Fashion Business, enjoy Dubai Shopping, or simply keep up with Dubai news, cultivating the right Entrepreneur Mindset is everything.
+
+In this video, discover how to Secure a Creative Entrepreneur Mindset by using simple Daily Affirmations in Dubai. Say these powerful lines every time you visit Burj Khalifa, Dubai Mall, or a Dubai Restaurant—even while doing Dubai Tourism. Speak to nature with a Creative Royalty Tracking Mindset, and train your brain to default toward building a Passive Wealth System.
+
+Whether you're out enjoying the city or working on your business, let these affirmations align you with success, abundance, and creativity. Watch now and start thinking like a true creative entrepreneur in Dubai.REPEAT:\n{aff_list}\n\n#realtor #affirmations #realestate #shorts"
     tags = ["realtor", "affirmations", "realestate", "mindset", "shorts"]
 
     print("\n📤 Uploading...")
