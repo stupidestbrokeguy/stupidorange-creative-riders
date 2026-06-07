@@ -29,8 +29,12 @@ INTROS_FILE = "intros_realtor_prompts.json"
 PROMPTS_FILE = "prompts_realtor.json"
 MAX_PROMPTS = 7
 
-PLAYLIST_TITLE = "Realtor Success | Real Estate AI Prompts"
-PLAYLIST_DESCRIPTION = """Daily AI prompts for real estate agents – lead generation, closing scripts, marketing.
+PLAYLIST_TITLE = "Secure Creative Entreprenuer Habits | Real Estate Dubai | Stupid Orange"
+PLAYLIST_DESCRIPTION = """Are you ready for a Dubai Business Setup or have you already started your journey? Whether you're in the Dubai Fashion Business, enjoy Dubai Shopping, or simply keep up with Dubai news, cultivating the right Entrepreneur Mindset is everything.
+
+In this video, discover how to Secure a Creative Entrepreneur Mindset by using simple Daily Affirmations in Dubai. Say these powerful lines every time you visit Burj Khalifa, Dubai Mall, or a Dubai Restaurant—even while doing Dubai Tourism. Speak to nature with a Creative Royalty Tracking Mindset, and train your brain to default toward building a Passive Wealth System.
+
+Whether you're out enjoying the city or working on your business, let these affirmations align you with success, abundance, and creativity. Watch now and start thinking like a true creative entrepreneur in Dubai.Daily AI prompts for real estate agents – lead generation, closing scripts, marketing.
 
 #realtor #realestate #AIprompts #shorts"""
 
@@ -317,11 +321,17 @@ def main():
     create_thumbnail_from_intro(intro_text, thumb_bg, thumb_file)
 
     today = datetime.now().strftime("%B %d, %Y")
-    title = f"{intro_title} | {today} | Realtor AI Prompts"
+    title = f"{intro_title} | {today} | Realtor Creative Entreprenuer Habits Dubai"
     if len(title) > 100:
         title = title[:97] + "..."
     prompts_list = "\n".join([f"{i+1}. {p}" for i,p in enumerate(prompts)])
-    description = f"""Daily AI prompts for real estate agents.\n\n🔥 PROMPTS:\n{prompts_list}\n\n#realtor #realestate #AIprompts #shorts"""
+    description = f"""Daily Creative Entreprenuer Habits for real estate agents in Dubai.\n\n🔥 
+    
+    Are you ready for a Dubai Business Setup or have you already started your journey? Whether you're in the Dubai Fashion Business, enjoy Dubai Shopping, or simply keep up with Dubai news, cultivating the right Entrepreneur Mindset is everything.
+
+In this video, discover how to Secure a Creative Entrepreneur Mindset by using simple Daily Affirmations in Dubai. Say these powerful lines every time you visit Burj Khalifa, Dubai Mall, or a Dubai Restaurant—even while doing Dubai Tourism. Speak to nature with a Creative Royalty Tracking Mindset, and train your brain to default toward building a Passive Wealth System.
+
+Whether you're out enjoying the city or working on your business, let these affirmations align you with success, abundance, and creativity. Watch now and start thinking like a true creative entrepreneur in Dubai.PROMPTS:\n{prompts_list}\n\n#realtor #realestate #AIprompts #shorts"""
     tags = ["realtor", "realestate", "AIprompts", "shorts"]
 
     print("\n📤 Uploading...")
