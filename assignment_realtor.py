@@ -13,8 +13,12 @@ from datetime import datetime
 import fitz  # PyMuPDF
 
 # ========== REALTOR CONFIGURATION ==========
-PLAYLIST_TITLE = "Creative Daily Assignments | Stupid Orange Realtors"
-PLAYLIST_DESCRIPTION = """Daily assignments from Creative Daily to help real estate professionals and property investors take action and start collecting royalties from their creativity."""
+PLAYLIST_TITLE = "Secure Creative Entreprenuer Habits | Stupid Orange Realtors Dubai"
+PLAYLIST_DESCRIPTION = """Are you ready for a Dubai Business Setup or have you already started your journey? Whether you're in the Dubai Fashion Business, enjoy Dubai Shopping, or simply keep up with Dubai news, cultivating the right Entrepreneur Mindset is everything.
+
+In this video, discover how to Secure a Creative Entrepreneur Mindset by using simple Daily Affirmations in Dubai. Say these powerful lines every time you visit Burj Khalifa, Dubai Mall, or a Dubai Restaurant—even while doing Dubai Tourism. Speak to nature with a Creative Royalty Tracking Mindset, and train your brain to default toward building a Passive Wealth System.
+
+Whether you're out enjoying the city or working on your business, let these affirmations align you with success, abundance, and creativity. Watch now and start thinking like a true creative entrepreneur in Dubai."""
 
 # Template file name (your Canva design for assignments)
 TEMPLATE_PATH = "assignment_template.png"  # Change this to your assignment template filename
@@ -390,9 +394,14 @@ class AssignmentExtractor:
         date_obj = datetime.strptime(target_date, "%Y-%m-%d")
         formatted_date = date_obj.strftime("%B %d, %Y")
 
-        full_title = f"Stop Being Broke, Do This, | {formatted_date} | Stupid Orange Realtors"
+        full_title = f"Secure Creative Entreprenuer Habits, Do This, | {formatted_date} | Stupid Orange Realtors"
         
         video_description = f"""📋Stop Being Broke, Do This, DAILY ASSIGNMENT - {formatted_date} 📋
+        Are you ready for a Dubai Business Setup or have you already started your journey? Whether you're in the Dubai Fashion Business, enjoy Dubai Shopping, or simply keep up with Dubai news, cultivating the right Entrepreneur Mindset is everything.
+
+In this video, discover how to Secure a Creative Entrepreneur Mindset by using simple Daily Affirmations in Dubai. Say these powerful lines every time you visit Burj Khalifa, Dubai Mall, or a Dubai Restaurant—even while doing Dubai Tourism. Speak to nature with a Creative Royalty Tracking Mindset, and train your brain to default toward building a Passive Wealth System.
+
+Whether you're out enjoying the city or working on your business, let these affirmations align you with success, abundance, and creativity. Watch now and start thinking like a true creative entrepreneur in Dubai.
 
 {assignment_text}
 
