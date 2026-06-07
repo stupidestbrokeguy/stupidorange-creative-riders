@@ -13,8 +13,12 @@ from datetime import datetime
 import fitz  # PyMuPDF
 
 # ========== REALTOR CONFIGURATION ==========
-PLAYLIST_TITLE = "Creative Daily Affirmations | Stupid Orange Realtors"
-PLAYLIST_DESCRIPTION = """Daily affirmations from Creative Daily to help real estate professionals and property investors start collecting royalties from their creativity. Stupid Orange Realtor is a brand helping people in real estate to fast-track to collecting their first royalty and live a true royal lifestyle."""
+PLAYLIST_TITLE = "Secure Creative Entreprenure Mindset | Stupid Orange Realtors Dubai"
+PLAYLIST_DESCRIPTION = """Are you ready for a Dubai Business Setup or have you already started your journey? Whether you're in the Dubai Fashion Business, enjoy Dubai Shopping, or simply keep up with Dubai news, cultivating the right Entrepreneur Mindset is everything.
+
+In this video, discover how to Secure a Creative Entrepreneur Mindset by using simple Daily Affirmations in Dubai. Say these powerful lines every time you visit Burj Khalifa, Dubai Mall, or a Dubai Restaurant—even while doing Dubai Tourism. Speak to nature with a Creative Royalty Tracking Mindset, and train your brain to default toward building a Passive Wealth System.
+
+Whether you're out enjoying the city or working on your business, let these affirmations align you with success, abundance, and creativity. Watch now and start thinking like a true creative entrepreneur in Dubai."""
 
 TEMPLATE_PATH = "affirmation_template.png"
 
@@ -319,9 +323,14 @@ class AffirmationExtractor:
         print(f"\n📤 Uploading to YouTube...")
         date_obj = datetime.strptime(target_date, "%Y-%m-%d")
         formatted_date = date_obj.strftime("%B %d, %Y")
-        full_title = f"Stop Being Broke!, Say This - | {formatted_date} | Stupid Orange Realtors"
+        full_title = f"Secure Creative Entreprenuer Mindset!, Say This - | {formatted_date} | Stupid Orange Realtors Dubai"
         
-        video_description = f"""🌟 Stop Being Broke, Say This,-DAILY AFFIRMATION - {formatted_date} 🌟
+        video_description = f"""🌟 Secure Creative Entreprenuer Mindset, Say This,-DAILY AFFIRMATION - {formatted_date} 🌟
+        Are you ready for a Dubai Business Setup or have you already started your journey? Whether you're in the Dubai Fashion Business, enjoy Dubai Shopping, or simply keep up with Dubai news, cultivating the right Entrepreneur Mindset is everything.
+
+In this video, discover how to Secure a Creative Entrepreneur Mindset by using simple Daily Affirmations in Dubai. Say these powerful lines every time you visit Burj Khalifa, Dubai Mall, or a Dubai Restaurant—even while doing Dubai Tourism. Speak to nature with a Creative Royalty Tracking Mindset, and train your brain to default toward building a Passive Wealth System.
+
+Whether you're out enjoying the city or working on your business, let these affirmations align you with success, abundance, and creativity. Watch now and start thinking like a true creative entrepreneur in Dubai.
 
 {affirmation_text}
 
@@ -331,8 +340,7 @@ class AffirmationExtractor:
 
 🔗 www.stupidorange.com
 📘 creativedaily.stupidorange.com
-
-#affirmation #dailyaffirmation #creativedaily #stupidorangerealtors #UAE #DubaiRealEstate #PropertyInvestment #realestateagent
+ #creativedaily #stupidorangerealtors #realestateagent #Dubai #entreprenuermindset
 """
         try:
             from google.oauth2.credentials import Credentials
