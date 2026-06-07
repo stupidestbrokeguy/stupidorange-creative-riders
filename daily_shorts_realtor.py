@@ -18,7 +18,7 @@ from PIL import Image
 import random
 
 # ========== REALTOR CONFIGURATION ==========
-VIDEO_TITLE = "Stupid Broke Moment, What Happened? - Stupid Orange Realtor, Creative Daily"
+VIDEO_TITLE = "Stupid Broke Moment, What Happened? - Stupid Orange Realtor Dubai, Creative Daily"
 HASHTAGS = "#stupidorange #creativedaily #stupidorangerealtor #DubaiRealEstate #PropertyInvestment #UAE #realestateagent #dubairealestate #investmenttips"
 VIDEO_DURATION = random.randint(16, 21) 
 IMAGES_FOLDER = "daily_images"          # You can change to "daily_images_realtor" if needed
