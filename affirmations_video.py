@@ -32,8 +32,12 @@ AFFIRMATIONS_FILE = "affirmations.yaml"
 
 MAX_AFFIRMATIONS = 7     # keep video under 60s (5+35+10=50s)
 
-PLAYLIST_TITLE = "Daily Affirmations | Positive Mindset | Manifestation"
-PLAYLIST_DESCRIPTION = """Start your day with powerful affirmations. Repeat them daily to rewire your subconscious mind.
+PLAYLIST_TITLE = "Secure Creative Entreprenuer Mindset | Positive Mindset | Manifestation | Stupid Orange Dubai"
+PLAYLIST_DESCRIPTION = """Are you ready for a Dubai Business Setup or have you already started your journey? Whether you're in the Dubai Fashion Business, enjoy Dubai Shopping, or simply keep up with Dubai news, cultivating the right Entrepreneur Mindset is everything.
+
+In this video, discover how to Secure a Creative Entrepreneur Mindset by using simple Daily Affirmations in Dubai. Say these powerful lines every time you visit Burj Khalifa, Dubai Mall, or a Dubai Restaurant—even while doing Dubai Tourism. Speak to nature with a Creative Royalty Tracking Mindset, and train your brain to default toward building a Passive Wealth System.
+
+Whether you're out enjoying the city or working on your business, let these affirmations align you with success, abundance, and creativity. Watch now and start thinking like a true creative entrepreneur in Dubai..
 
 #affirmations #dailymotivation #positivity #manifestation #shorts"""
 
@@ -369,12 +373,16 @@ def main():
 
     # Metadata
     today = datetime.now().strftime("%B %d, %Y")
-    title = f"{intro_title} | {today} | Daily Affirmations"
+    title = f"{intro_title} | {today} | Daily Affirmations Dubai"
     if len(title) > 100:
         title = title[:97] + "..."
 
     aff_list = "\n".join([f"{i+1}. {a}" for i, a in enumerate(affirmations)])
-    description = f"""Start your day with these {len(affirmations)} powerful affirmations.
+    description = f"""Start your day with these {len(affirmations)} powerful affirmations.Are you ready for a Dubai Business Setup or have you already started your journey? Whether you're in the Dubai Fashion Business, enjoy Dubai Shopping, or simply keep up with Dubai news, cultivating the right Entrepreneur Mindset is everything.
+
+In this video, discover how to Secure a Creative Entrepreneur Mindset by using simple Daily Affirmations in Dubai. Say these powerful lines every time you visit Burj Khalifa, Dubai Mall, or a Dubai Restaurant—even while doing Dubai Tourism. Speak to nature with a Creative Royalty Tracking Mindset, and train your brain to default toward building a Passive Wealth System.
+
+Whether you're out enjoying the city or working on your business, let these affirmations align you with success, abundance, and creativity. Watch now and start thinking like a true creative entrepreneur in Dubai.
 
 📿 REPEAT THEM:
 {aff_list}
