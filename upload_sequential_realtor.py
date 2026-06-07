@@ -190,7 +190,7 @@ def main():
     # 4. Load credits
     credits = load_credits()
     description = build_description(next_number, credits)
-    title = f"Video of the Day | ({datetime.now().strftime('%Y-%m-%d')}) | Stupid Orange Realtor"
+    title = f"Secure Creative Entreprenuer Inspiration | ({datetime.now().strftime('%Y-%m-%d')}) | Stupid Orange Realtor Dubai"
     tags = ["StupidOrange", "CreativeDaily", "VideoOfTheDay", "DubaiRealEstate", "PropertyInvestment", "realestateagent"]
 
     # 5. Upload
