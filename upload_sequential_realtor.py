@@ -136,7 +136,11 @@ def upload_video(youtube, video_path, title, description, tags, privacy_status="
 def build_description(number, credit_dict):
     """Build YouTube description for Realtor channel."""
     today = datetime.now().strftime("%B %d, %Y")
-    base_desc = f"Daily video from Stupid Orange Realtor. {today}\n\nReal estate insights and creative inspiration for property professionals."
+    base_desc = f"Daily video from Stupid Orange Realtor. {today}\n\nAre you ready for a Dubai Business Setup or have you already started your journey? Whether you're in the Dubai Fashion Business, enjoy Dubai Shopping, or simply keep up with Dubai news, cultivating the right Entrepreneur Mindset is everything.
+
+In this video, discover how to Secure a Creative Entrepreneur Mindset by using simple Daily Affirmations in Dubai. Say these powerful lines every time you visit Burj Khalifa, Dubai Mall, or a Dubai Restaurant—even while doing Dubai Tourism. Speak to nature with a Creative Royalty Tracking Mindset, and train your brain to default toward building a Passive Wealth System.
+
+Whether you're out enjoying the city or working on your business, let these affirmations align you with success, abundance, and creativity. Watch now and start thinking like a true creative entrepreneur in Dubai.Real estate insights and creative inspiration for property professionals."
     
     credit_text = credit_dict.get(str(number)) or credit_dict.get(number)
     if credit_text:
